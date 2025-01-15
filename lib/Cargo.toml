@@ -1,0 +1,22 @@
+[package]
+name = "lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.95"
+async-trait = "0.1.85"
+serde = { version = "1.0.217", features = ["derive"] }
+
+[dependencies.uuid]
+version = "1.12.0"
+features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
+]
+
+
+[dependencies.tokio]
+version = "1.43.0"
+features = ["macros", "rt-multi-thread"]
