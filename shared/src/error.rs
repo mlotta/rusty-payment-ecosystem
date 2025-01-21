@@ -2,7 +2,6 @@ use thiserror::Error;
 
 pub type E = Box<dyn std::error::Error + Sync + Send + 'static>;
 
-
 /// Customer errors
 #[derive(Debug, Error)]
 pub enum InterfaceError {

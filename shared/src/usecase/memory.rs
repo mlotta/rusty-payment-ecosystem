@@ -1,11 +1,11 @@
 //! In Memory implementation of a Repository
-use crate::ports::secondary::{Create, Get, Update, Delete, List, Repository};
-use std::{collections::HashMap, sync::RwLock};
+use crate::ports::secondary::{Create, Delete, Get, List, Repository, Update};
+use crate::{error::InterfaceError, Val};
 use async_trait::async_trait;
-use crate::{Val, error::InterfaceError};
+use std::{collections::HashMap, sync::RwLock};
 use uuid::Uuid;
 
-pub trait HasUuid{
+pub trait HasUuid {
     fn get_uuid(&self) -> Uuid;
 }
 
@@ -14,10 +14,10 @@ pub struct InMemoryRepository<T>
 where
     T: Val + HasUuid,
 {
-        data: RwLock<HashMap<Uuid, T>>
+    data: RwLock<HashMap<Uuid, T>>,
 }
 
-impl<T> InMemoryRepository<T> 
+impl<T> InMemoryRepository<T>
 where
     T: Val + HasUuid,
 {
@@ -26,13 +26,12 @@ where
     }
 }
 
-
 #[async_trait]
-impl<T> Create<T> for InMemoryRepository<T> 
+impl<T> Create<T> for InMemoryRepository<T>
 where
     T: Val + HasUuid,
 {
-    async fn create(&self, item: &T) -> Result<(), InterfaceError>{
+    async fn create(&self, item: &T) -> Result<(), InterfaceError> {
         self.data
             .write()
             .unwrap()
@@ -42,20 +41,17 @@ where
 }
 
 #[async_trait]
-impl<T> Get<T> for InMemoryRepository<T> 
+impl<T> Get<T> for InMemoryRepository<T>
 where
     T: Val + HasUuid,
 {
-    async fn get(&self, id: &Uuid) -> Result<Option<T>, InterfaceError>{
+    async fn get(&self, id: &Uuid) -> Result<Option<T>, InterfaceError> {
         Ok(self.data.read().unwrap().get(id).cloned())
-
     }
-
 }
 
-
 #[async_trait]
-impl<T> Delete<T> for InMemoryRepository<T> 
+impl<T> Delete<T> for InMemoryRepository<T>
 where
     T: Val + HasUuid,
 {
@@ -65,9 +61,8 @@ where
     }
 }
 
-
 #[async_trait]
-impl<T> Update<T> for InMemoryRepository<T> 
+impl<T> Update<T> for InMemoryRepository<T>
 where
     T: Val + HasUuid,
 {
@@ -81,37 +76,29 @@ where
 }
 
 #[async_trait]
-impl<T> List<T> for InMemoryRepository<T> 
+impl<T> List<T> for InMemoryRepository<T>
 where
     T: Val + HasUuid,
 {
-    async fn list(&self) -> Result<Vec<T>, InterfaceError>{
+    async fn list(&self) -> Result<Vec<T>, InterfaceError> {
         Ok(self
             .data
             .read()
             .unwrap()
             .iter()
             .map(|(_, v)| v.clone())
-            .collect()
-        )
-
+            .collect())
     }
 }
 
 #[async_trait]
-impl<T> Repository<T> for InMemoryRepository<T>
-where
-    T: Val + HasUuid,
-{}
-
-
-
+impl<T> Repository<T> for InMemoryRepository<T> where T: Val + HasUuid {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uuid::Uuid;
     use serde::{Deserialize, Serialize};
+    use uuid::Uuid;
 
     // Define structures
     #[derive(Default, Debug, Clone, Deserialize, PartialEq, Serialize)]
@@ -128,9 +115,9 @@ mod tests {
 
     // Gen item
     fn gen_item() -> Item1 {
-        Item1{
+        Item1 {
             uuid: Uuid::new_v4(),
-            field1: 3
+            field1: 3,
         }
     }
 
@@ -158,8 +145,6 @@ mod tests {
 
         Ok(())
     }
-
-
 
     #[tokio::test]
     async fn test_all() -> Result<(), InterfaceError> {
@@ -204,7 +189,6 @@ mod tests {
 
         Ok(())
     }
-
 
     #[tokio::test]
     async fn test_get() -> Result<(), InterfaceError> {
@@ -258,5 +242,4 @@ mod tests {
 
         Ok(())
     }
-
 }

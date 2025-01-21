@@ -1,8 +1,8 @@
 //! RdsClient is use to communicate with an AWS Aurora DB
+use crate::settings::RdsSettings;
 use aws_config::SdkConfig;
 use aws_sdk_rdsdata::operation::execute_statement::builders::ExecuteStatementFluentBuilder;
 use secrecy::{ExposeSecret, Secret};
-use crate::settings::RdsSettings;
 
 #[derive(Clone)]
 pub struct RdsClient {
@@ -22,7 +22,7 @@ impl RdsClient {
         }
     }
 
-    pub fn execute_statement(&self) ->  ExecuteStatementFluentBuilder {
+    pub fn execute_statement(&self) -> ExecuteStatementFluentBuilder {
         self.client
             .execute_statement()
             .secret_arn(self.secret_arn.expose_secret())

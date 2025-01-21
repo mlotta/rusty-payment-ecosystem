@@ -13,7 +13,6 @@ pub fn setup_tracing() {
         .json()
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("failed to set tracing subscriber");
-
 }
 
 // Setup repository
@@ -22,7 +21,7 @@ pub fn setup_tracing() {
 //     // Get AWS Config
 //     let sdk_config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
 
-//     // Load settings 
+//     // Load settings
 //     let environment = init_environment().expect("Failed to initialize environment");
 //     let settings = get_settings(&environment).expect("Failed to load configuration");
 

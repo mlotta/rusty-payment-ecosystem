@@ -1,15 +1,16 @@
+use crate::{error::InterfaceError, Val};
 use async_trait::async_trait;
-use crate::{Val, error::InterfaceError};
 use uuid::Uuid;
 
-pub trait Repository<T>: Create<T> + Get<T> + Update<T> + List<T> + Delete<T> 
+pub trait Repository<T>: Create<T> + Get<T> + Update<T> + List<T> + Delete<T>
 where
     T: Val,
-{}
+{
+}
 
 /// Create object trait
 #[async_trait]
-pub trait Create<T> 
+pub trait Create<T>
 where
     T: Val,
 {
@@ -18,7 +19,7 @@ where
 
 /// Get object trait
 #[async_trait]
-pub trait Get<T> 
+pub trait Get<T>
 where
     T: Val,
 {
@@ -27,7 +28,7 @@ where
 
 /// Delete object trait
 #[async_trait]
-pub trait Delete<T> 
+pub trait Delete<T>
 where
     T: Val,
 {
@@ -36,7 +37,7 @@ where
 
 /// Update object trait
 #[async_trait]
-pub trait Update<T> 
+pub trait Update<T>
 where
     T: Val,
 {
@@ -45,7 +46,7 @@ where
 
 /// Get object range trait
 #[async_trait]
-pub trait List<T> 
+pub trait List<T>
 where
     T: Val,
 {

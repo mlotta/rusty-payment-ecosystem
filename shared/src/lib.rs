@@ -1,17 +1,15 @@
-pub mod usecase;
 pub mod ports;
+pub mod usecase;
 // pub mod domain;
 pub mod error;
 
-pub mod utils;
-pub mod settings;
 pub mod rds_client;
-
+pub mod settings;
+pub mod utils;
 
 // Define requirement for Val
 pub trait Val: Default + Send + Sync + Clone {}
 impl<T> Val for T where T: Default + Send + Sync + Clone {}
-
 
 /// Queryset for SQL implementations
 pub trait QuerySet<T> {
@@ -39,4 +37,3 @@ pub trait QuerySet<T> {
     /// SQL query to list all items
     fn list(&self) -> String;
 }
-            

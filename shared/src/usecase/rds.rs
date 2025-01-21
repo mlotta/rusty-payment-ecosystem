@@ -1,18 +1,18 @@
 //! Implementation of a Repository for a Rds Client
-use std::sync::Arc;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
+use crate::{error::InterfaceError, QuerySet, Val};
 use crate::{
-    ports::secondary::{Create, Delete, Get, List, Repository, Update}, 
-    rds_client::RdsClient
+    ports::secondary::{Create, Delete, Get, List, Repository, Update},
+    rds_client::RdsClient,
 };
 use async_trait::async_trait;
 use aws_sdk_rdsdata::types::SqlParameter;
-use crate::{Val, QuerySet, error::InterfaceError};
 use aws_sdk_rdsdata::{
-    types::RecordsFormatType,
     error::SdkError,
     operation::execute_statement::{ExecuteStatementError, ExecuteStatementOutput},
+    types::RecordsFormatType,
 };
 use uuid::Uuid;
 
@@ -22,11 +22,10 @@ pub trait GetFieldsAsParams {
     fn get_fields_as_params(&self) -> Option<Vec<SqlParameter>>;
 }
 
-
 pub struct RdsRepository<T, Q>
 where
-    T: Val + GetFieldsAsParams ,
-    Q: QuerySet<T> + std::marker::Sync
+    T: Val + GetFieldsAsParams,
+    Q: QuerySet<T> + std::marker::Sync,
 {
     client: Arc<RdsClient>,
     queryset: Box<Q>,
@@ -41,32 +40,30 @@ where
     /// }
     new_from_json_output: Box<dyn Fn(String) -> Result<Vec<T>, InterfaceError> + Sync>,
 
-    _marker_val: PhantomData<T>
+    _marker_val: PhantomData<T>,
 }
 
-
-impl<T, Q> RdsRepository<T, Q> 
-where 
-    T: Val  + GetFieldsAsParams,
-    Q: QuerySet<T> + std::marker::Sync
+impl<T, Q> RdsRepository<T, Q>
+where
+    T: Val + GetFieldsAsParams,
+    Q: QuerySet<T> + std::marker::Sync,
 {
     /// Create a table with name {table} in the remote database
     pub fn new(
-        client: Arc<RdsClient>, 
-        queryset: Box<Q>, 
+        client: Arc<RdsClient>,
+        queryset: Box<Q>,
         new_from_json_output: Box<dyn Fn(String) -> Result<Vec<T>, InterfaceError> + Sync>,
     ) -> Self {
         RdsRepository {
             client: client,
             queryset: queryset,
             new_from_json_output: new_from_json_output,
-            _marker_val: PhantomData
+            _marker_val: PhantomData,
         }
-
     }
-    
+
     /// Create the remote table
-    pub async fn create_table(&self) -> Result<(), InterfaceError>{
+    pub async fn create_table(&self) -> Result<(), InterfaceError> {
         self.client
             .execute_statement()
             .sql(self.queryset.create_table())
@@ -76,8 +73,8 @@ where
         Ok(())
     }
 
-    /// !!! DROP THE REMOTE TABLE !!! 
-    pub async fn drop_table(&self) -> Result<(), InterfaceError>{
+    /// !!! DROP THE REMOTE TABLE !!!
+    pub async fn drop_table(&self) -> Result<(), InterfaceError> {
         self.client
             .execute_statement()
             .sql(self.queryset.drop_table())
@@ -87,14 +84,12 @@ where
         Ok(())
     }
 
-    fn parse_rds_output (
+    fn parse_rds_output(
         &self,
-        statement: Result<ExecuteStatementOutput, 
-        SdkError<ExecuteStatementError>>,
-        ) -> Result<Vec<T>, InterfaceError>
-        {
+        statement: Result<ExecuteStatementOutput, SdkError<ExecuteStatementError>>,
+    ) -> Result<Vec<T>, InterfaceError> {
         // Did the request succeed?
-        let data = match statement{
+        let data = match statement {
             Ok(data) => Ok(data),
             Err(err) => Err(InterfaceError::RdsError(err.into())),
         }?;
@@ -110,48 +105,44 @@ where
         // Can we parse the records?
         (self.new_from_json_output)(records.to_string())
     }
-
 }
 
-
 #[async_trait]
-impl<T, Q> Create<T> for RdsRepository<T, Q> 
+impl<T, Q> Create<T> for RdsRepository<T, Q>
 where
-    T: Val  + GetFieldsAsParams,
-    Q: QuerySet<T> + std::marker::Sync
+    T: Val + GetFieldsAsParams,
+    Q: QuerySet<T> + std::marker::Sync,
 {
-    async fn create(&self, item: &T) -> Result<(), InterfaceError>{
+    async fn create(&self, item: &T) -> Result<(), InterfaceError> {
         self.client
             .execute_statement()
             .sql(self.queryset.create())
             .set_parameters(item.get_fields_as_params())
             .send()
             .await
-            .map_err(|err| InterfaceError::RdsError(err.into())
-            )?;
+            .map_err(|err| InterfaceError::RdsError(err.into()))?;
         Ok(())
     }
 }
 
 #[async_trait]
-impl<T, Q> Get<T> for RdsRepository<T, Q> 
+impl<T, Q> Get<T> for RdsRepository<T, Q>
 where
     T: Val + GetFieldsAsParams,
-    Q: QuerySet<T> + std::marker::Sync
+    Q: QuerySet<T> + std::marker::Sync,
 {
-    async fn get(&self, id: &Uuid) -> Result<Option<T>, InterfaceError>{
-        let statement = self.client
+    async fn get(&self, id: &Uuid) -> Result<Option<T>, InterfaceError> {
+        let statement = self
+            .client
             .execute_statement()
             .sql(self.queryset.get("uuid"))
-            .set_parameters(
-                Some(vec![
-                    aws_sdk_rdsdata::types::SqlParameter::builder()
-                        .name("uuid".to_string())
-                        .value(aws_sdk_rdsdata::types::Field::StringValue(id.to_string().clone()))
-                        .type_hint(aws_sdk_rdsdata::types::TypeHint::Uuid)
-                        .build()
-                ])
-            )
+            .set_parameters(Some(vec![aws_sdk_rdsdata::types::SqlParameter::builder()
+                .name("uuid".to_string())
+                .value(aws_sdk_rdsdata::types::Field::StringValue(
+                    id.to_string().clone(),
+                ))
+                .type_hint(aws_sdk_rdsdata::types::TypeHint::Uuid)
+                .build()]))
             .format_records_as(RecordsFormatType::Json)
             .send()
             .await;
@@ -160,10 +151,13 @@ where
 
         if items.len() > 1 {
             // There should only be one record
-            return Err(InterfaceError::Other(format!("Received multiple results for id: {:}", id)));
+            return Err(InterfaceError::Other(format!(
+                "Received multiple results for id: {:}",
+                id
+            )));
         }
 
-        if items.is_empty(){
+        if items.is_empty() {
             return Ok(None);
         }
 
@@ -175,67 +169,59 @@ where
         }?;
         Ok(Some(item.to_owned()))
     }
-
 }
 
-
 #[async_trait]
-impl<T, Q> Delete<T> for RdsRepository<T, Q> 
+impl<T, Q> Delete<T> for RdsRepository<T, Q>
 where
-    T: Val + GetFieldsAsParams ,
-    Q: QuerySet<T> + std::marker::Sync
+    T: Val + GetFieldsAsParams,
+    Q: QuerySet<T> + std::marker::Sync,
 {
     async fn delete(&self, id: &Uuid) -> Result<(), InterfaceError> {
         self.client
             .execute_statement()
             .sql(self.queryset.delete("uuid"))
-            .set_parameters(
-                Some(vec![
-                    aws_sdk_rdsdata::types::SqlParameter::builder()
-                        .name("uuid".to_string())
-                        .value(aws_sdk_rdsdata::types::Field::StringValue(id.to_string().clone()))
-                        .type_hint(aws_sdk_rdsdata::types::TypeHint::Uuid)
-                        .build()
-                ])
-            )
+            .set_parameters(Some(vec![aws_sdk_rdsdata::types::SqlParameter::builder()
+                .name("uuid".to_string())
+                .value(aws_sdk_rdsdata::types::Field::StringValue(
+                    id.to_string().clone(),
+                ))
+                .type_hint(aws_sdk_rdsdata::types::TypeHint::Uuid)
+                .build()]))
             .send()
             .await
             .map(|_| Ok(()))
-            .map_err(|err| {
-                InterfaceError::RdsError(err.into())
-            })?
+            .map_err(|err| InterfaceError::RdsError(err.into()))?
     }
 }
 
-
 #[async_trait]
-impl<T, Q> Update<T> for RdsRepository<T, Q> 
+impl<T, Q> Update<T> for RdsRepository<T, Q>
 where
-    T: Val + GetFieldsAsParams ,
-    Q: QuerySet<T> + std::marker::Sync
+    T: Val + GetFieldsAsParams,
+    Q: QuerySet<T> + std::marker::Sync,
 {
     async fn update(&self, item: &T) -> Result<(), InterfaceError> {
         self.client
-        .execute_statement()
-        .sql(self.queryset.update())
-        .set_parameters(item.get_fields_as_params())
-        .send()
-        .await
-        .map_err(|err| {
-            InterfaceError::RdsError(err.into())
-        })?;
+            .execute_statement()
+            .sql(self.queryset.update())
+            .set_parameters(item.get_fields_as_params())
+            .send()
+            .await
+            .map_err(|err| InterfaceError::RdsError(err.into()))?;
         Ok(())
     }
 }
 
 #[async_trait]
-impl<T, Q> List<T> for RdsRepository<T, Q> 
+impl<T, Q> List<T> for RdsRepository<T, Q>
 where
     T: Val + GetFieldsAsParams,
-    Q: QuerySet<T> + std::marker::Sync
+    Q: QuerySet<T> + std::marker::Sync,
 {
-    async fn list(&self) -> Result<Vec<T>, InterfaceError>{
-        let statement = self.client
+    async fn list(&self) -> Result<Vec<T>, InterfaceError> {
+        let statement = self
+            .client
             .execute_statement()
             .sql(self.queryset.list())
             .format_records_as(RecordsFormatType::Json)
@@ -250,19 +236,18 @@ where
 impl<T, Q> Repository<T> for RdsRepository<T, Q>
 where
     T: Val + GetFieldsAsParams,
-    Q: QuerySet<T> + std::marker::Sync
-{}
-
-
+    Q: QuerySet<T> + std::marker::Sync,
+{
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::settings::{get_settings, init_environment};
-    use sql_macros::struct_to_sql;
-    use uuid::Uuid;
     use serde::{Deserialize, Serialize};
     use serde_json::from_str;
+    use sql_macros::struct_to_sql;
+    use uuid::Uuid;
 
     // Define structures
     #[derive(Deserialize, Serialize, PartialEq)]
@@ -274,18 +259,17 @@ mod tests {
 
     // Gen item
     fn gen_item() -> Item1 {
-        Item1{
+        Item1 {
             uuid: Uuid::new_v4(),
-            field1: 3
+            field1: 3,
         }
     }
 
-    async fn get_item1_repository() -> RdsRepository<Item1, Item1QuerySet<Item1>> 
-    {
+    async fn get_item1_repository() -> RdsRepository<Item1, Item1QuerySet<Item1>> {
         // Get AWS Config
         let sdk_config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
 
-        // Load settings 
+        // Load settings
         let environment = init_environment().expect("Failed to initialize environment");
         let settings = get_settings(&environment).expect("Failed to load configuration");
 
@@ -295,28 +279,36 @@ mod tests {
         // Initialize the Item1 queryset
         let queryset: Box<Item1QuerySet<Item1>> = Box::new(Item1::queryset());
 
-        // 
-        let new_from_json_output = Box::new(|records: String| {
-            match from_str::<Vec<Item1>>(records.as_str()) {
-                Ok(items) => Ok(items),
-                Err(e) => Err(InterfaceError::FromFields(format!(
-                    "Failed to parse formatted records: {e}"
-                ))),
-            }
-        });
+        //
+        let new_from_json_output =
+            Box::new(
+                |records: String| match from_str::<Vec<Item1>>(records.as_str()) {
+                    Ok(items) => Ok(items),
+                    Err(e) => Err(InterfaceError::FromFields(format!(
+                        "Failed to parse formatted records: {e}"
+                    ))),
+                },
+            );
 
         // Initialize Rds Customer Repository
-        let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = RdsRepository::new(client, queryset, new_from_json_output);
+        let repo: RdsRepository<Item1, Item1QuerySet<Item1>> =
+            RdsRepository::new(client, queryset, new_from_json_output);
         repo
     }
 
     #[tokio::test]
     async fn test_queryset() -> Result<(), InterfaceError> {
-        let repo: RdsRepository<Item1,  Item1QuerySet<Item1>> = get_item1_repository().await;
+        let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = get_item1_repository().await;
 
         assert_eq!(repo.queryset.table(), "Item1".to_string());
-        assert_eq!(repo.queryset.drop_table(), "DROP TABLE IF EXISTS Item1".to_string());
-        assert_eq!(repo.queryset.create_table(), "CREATE TABLE IF NOT EXISTS Item1 (uuid UUID, field1 INTEGER)".to_string());
+        assert_eq!(
+            repo.queryset.drop_table(),
+            "DROP TABLE IF EXISTS Item1".to_string()
+        );
+        assert_eq!(
+            repo.queryset.create_table(),
+            "CREATE TABLE IF NOT EXISTS Item1 (uuid UUID, field1 INTEGER)".to_string()
+        );
         Ok(())
     }
 
@@ -414,5 +406,4 @@ mod tests {
         assert_eq!(all.len(), 1);
         Ok(())
     }
-
 }
