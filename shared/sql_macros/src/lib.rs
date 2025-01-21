@@ -5,9 +5,9 @@ use syn::{Data, parse_macro_input, DeriveInput, Field, Fields, Type, Ident};
 use quote::quote;
 
 enum SqlTypes {
-    StringValue,
-    UuidValue,
-    IntegerValue
+    String,
+    Uuid,
+    Integer
 }
 
 impl SqlTypes {
@@ -17,9 +17,9 @@ impl SqlTypes {
             Type::Path(type_path) => {
                 let type_name = type_path.path.segments.first().unwrap().ident.to_string();
                 match type_name.as_str() {
-                    "String" => SqlTypes::StringValue,
-                    "i32" => SqlTypes::IntegerValue,
-                    "Uuid" => SqlTypes::UuidValue,
+                    "String" => SqlTypes::String,
+                    "i32" => SqlTypes::Integer,
+                    "Uuid" => SqlTypes::Uuid,
                     _ => unimplemented!("Unimplemented type {}", type_name)
                 }
             }
@@ -30,22 +30,22 @@ impl SqlTypes {
 
     fn to_sql_syntax(&self) -> &str {
         match self {
-            SqlTypes::StringValue => "VARCHAR(255)",
-            SqlTypes::IntegerValue => "INTEGER",
-            SqlTypes::UuidValue => "UUID",
+            SqlTypes::String => "VARCHAR(255)",
+            SqlTypes::Integer => "INTEGER",
+            SqlTypes::Uuid => "UUID",
         }
     }
 
     fn to_awsdata(&self, field_name: &&Ident) -> proc_macro2::TokenStream {
         match self {
-            SqlTypes::StringValue | SqlTypes::UuidValue => quote!(aws_sdk_rdsdata::types::Field::StringValue(self.#field_name.to_string().clone())),
-            SqlTypes::IntegerValue => quote!(aws_sdk_rdsdata::types::Field::LongValue(self.#field_name.clone().into())),
+            SqlTypes::String | SqlTypes::Uuid => quote!(aws_sdk_rdsdata::types::Field::StringValue(self.#field_name.to_string().clone())),
+            SqlTypes::Integer => quote!(aws_sdk_rdsdata::types::Field::LongValue(self.#field_name.clone().into())),
         }
     }
 
     fn to_typehint(&self) -> proc_macro2::TokenStream {
         match self {
-            SqlTypes::UuidValue => quote!(Some(aws_sdk_rdsdata::types::TypeHint::Uuid)),
+            SqlTypes::Uuid => quote!(Some(aws_sdk_rdsdata::types::TypeHint::Uuid)),
             _ => quote!(None)
         }
     }
@@ -60,7 +60,7 @@ fn update_row_query(fields: &Fields, struct_name: &Ident) -> String{
     for field in fields {
         let field_name = &field.ident;
 
-        if "uuid" != field_name.as_ref().unwrap().to_string() {
+        if *field_name.as_ref().unwrap() != "uuid" {
             fields_sql.push(format!("{} = :{}", field_name.as_ref().unwrap(), field_name.as_ref().unwrap()));
         }
 
@@ -87,7 +87,7 @@ fn create_table_query(fields: &Fields, struct_name: &Ident) -> String{
     let mut fields_sql = Vec::new();
     for field in fields {
         let field_name = &field.ident;
-        let sql_type = SqlTypes::from_field(&field);
+        let sql_type = SqlTypes::from_field(field);
 
         fields_sql.push(format!("{} {}", field_name.as_ref().unwrap(), sql_type.to_sql_syntax()));
 
@@ -102,7 +102,7 @@ fn fields_as_params(fields: &Fields) -> Vec<proc_macro2::TokenStream> {
     for field in fields {
         let field_name = &field.ident.as_ref().unwrap();
         let field_name_as_string = field_name.to_owned().to_string();
-        let sql_type = SqlTypes::from_field(&field);
+        let sql_type = SqlTypes::from_field(field);
 
         // let value = match sql_type {
         //     Sq

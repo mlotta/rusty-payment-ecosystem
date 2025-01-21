@@ -55,9 +55,9 @@ where
         new_from_json_output: Box<dyn Fn(String) -> Result<Vec<T>, InterfaceError> + Sync>,
     ) -> Self {
         RdsRepository {
-            client: client,
-            queryset: queryset,
-            new_from_json_output: new_from_json_output,
+            client,
+            queryset,
+            new_from_json_output,
             _marker_val: PhantomData,
         }
     }
@@ -84,6 +84,7 @@ where
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     fn parse_rds_output(
         &self,
         statement: Result<ExecuteStatementOutput, SdkError<ExecuteStatementError>>,
@@ -315,6 +316,7 @@ mod tests {
     /// Accessing the remote database, may result in AWS service fees
     #[tokio::test]
     #[serial_test::serial]
+    #[ignore]
     async fn test_create_and_delete_db() -> Result<(), InterfaceError> {
         // GIVEN an empty repository
         let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = get_item1_repository().await;
@@ -329,6 +331,7 @@ mod tests {
     //// Accessing the remote database, may result in AWS service fees
     #[tokio::test]
     #[serial_test::serial]
+    #[ignore]
     async fn test_all_empty() -> Result<(), InterfaceError> {
         // GIVEN a repository with an empty table
         let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = get_item1_repository().await;
@@ -346,6 +349,7 @@ mod tests {
 
     #[tokio::test]
     #[serial_test::serial]
+    #[ignore]
     async fn test_create_entry() -> Result<(), InterfaceError> {
         // GIVEN a repository with an empty table and an item
         let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = get_item1_repository().await;
@@ -365,6 +369,7 @@ mod tests {
 
     #[tokio::test]
     #[serial_test::serial]
+    #[ignore]
     async fn test_delete_entry() -> Result<(), InterfaceError> {
         // GIVEN a repository with an empty table and an item
         let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = get_item1_repository().await;
@@ -385,6 +390,7 @@ mod tests {
 
     #[tokio::test]
     #[serial_test::serial]
+    #[ignore]
     async fn test_update_entry() -> Result<(), InterfaceError> {
         // GIVEN a repository with an empty table and an item
         let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = get_item1_repository().await;

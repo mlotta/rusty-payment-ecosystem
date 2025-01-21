@@ -19,3 +19,4 @@ The `shared` library uses an hexagonal architecture pattern that provides off-th
 
 [comment]: <> (Rename and fill `config/base.yaml`)
 [comment]: <> (Detail the implemented repository, handlers, etc)
+[comment]: <> (Credits: https://github.com/aws-samples/serverless-rust-demo/tree/main, https://github.com/awslabs/aws-sdk-rust/tree/main/examples/cross_service/rest_ses)

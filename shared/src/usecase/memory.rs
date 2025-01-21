@@ -35,7 +35,7 @@ where
         self.data
             .write()
             .unwrap()
-            .insert(item.get_uuid().clone(), item.clone());
+            .insert(item.get_uuid(), item.clone());
         Ok(())
     }
 }
@@ -70,7 +70,7 @@ where
         self.data
             .write()
             .unwrap()
-            .insert(item.get_uuid().clone(), item.clone());
+            .insert(item.get_uuid(), item.clone());
         Ok(())
     }
 }
