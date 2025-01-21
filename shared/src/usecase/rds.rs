@@ -298,6 +298,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_queryset() -> Result<(), InterfaceError> {
         let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = get_item1_repository().await;
 

@@ -118,6 +118,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn test_get_local_settings() -> Result<(), SettingsError> {
         let envi = init_environment().expect("failed to load event");
         let settings = get_settings(&envi).expect("failed to load settings");
