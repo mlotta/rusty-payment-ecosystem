@@ -38,7 +38,7 @@ backup/
 *.msm
 *.msp
 *.txz
-.vscode/*
+.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
