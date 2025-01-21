@@ -5,7 +5,7 @@ use sql_macros::struct_to_sql;
 use uuid::Uuid;
 
 /// Redefining the trait here for testing
-trait QuerySet<T>{
+trait QuerySet<T> {
     /// Table name
     fn table(&self) -> String;
 
@@ -49,7 +49,7 @@ fn test_base() {
     let item = BaseModel {
         name: "abc".to_string(),
         id: 5,
-        uuid: Uuid::parse_str("0829b81a-f86e-4411-870a-ca16e6b73189").unwrap()
+        uuid: Uuid::parse_str("0829b81a-f86e-4411-870a-ca16e6b73189").unwrap(),
     };
 
     let queryset: BaseModelQuerySet<BaseModel> = BaseModel::queryset();
@@ -58,13 +58,32 @@ fn test_base() {
     assert_eq!(item.id, 5);
 
     assert_eq!(queryset.table(), "BaseModel".to_string());
-    assert_eq!(queryset.create_table(), "CREATE TABLE IF NOT EXISTS BaseModel (name VARCHAR(255), id INTEGER, uuid UUID)".to_string());
-    assert_eq!(queryset.drop_table(), "DROP TABLE IF EXISTS BaseModel".to_string());
-    assert_eq!(queryset.delete("id"), "DELETE FROM BaseModel WHERE id = :id".to_string());
-    assert_eq!(queryset.get("id"), "SELECT * FROM BaseModel WHERE id = :id".to_string());
+    assert_eq!(
+        queryset.create_table(),
+        "CREATE TABLE IF NOT EXISTS BaseModel (name VARCHAR(255), id INTEGER, uuid UUID)"
+            .to_string()
+    );
+    assert_eq!(
+        queryset.drop_table(),
+        "DROP TABLE IF EXISTS BaseModel".to_string()
+    );
+    assert_eq!(
+        queryset.delete("id"),
+        "DELETE FROM BaseModel WHERE id = :id".to_string()
+    );
+    assert_eq!(
+        queryset.get("id"),
+        "SELECT * FROM BaseModel WHERE id = :id".to_string()
+    );
     assert_eq!(queryset.list(), r#"SELECT * FROM BaseModel"#.to_string());
-    assert_eq!(queryset.create(), r#"INSERT INTO BaseModel (name, id, uuid) VALUES (:name, :id, :uuid)"#.to_string());
-    assert_eq!(queryset.update(), r#"UPDATE BaseModel SET name = :name, id = :id WHERE uuid = :uuid"#.to_string());
+    assert_eq!(
+        queryset.create(),
+        r#"INSERT INTO BaseModel (name, id, uuid) VALUES (:name, :id, :uuid)"#.to_string()
+    );
+    assert_eq!(
+        queryset.update(),
+        r#"UPDATE BaseModel SET name = :name, id = :id WHERE uuid = :uuid"#.to_string()
+    );
 
     let mut ground = HashMap::new();
     ground.insert("name", "abc");
@@ -74,17 +93,17 @@ fn test_base() {
     for param in fields_as_params {
         let name = param.name().unwrap();
         let _ = match param.value().unwrap() {
-            aws_sdk_rdsdata::types::Field::StringValue(s) => {assert_eq!(s.to_string(), *ground.get(name).unwrap())},
+            aws_sdk_rdsdata::types::Field::StringValue(s) => {
+                assert_eq!(s.to_string(), *ground.get(name).unwrap())
+            }
             aws_sdk_rdsdata::types::Field::LongValue(i) => {
                 let g: i64 = (*ground.get(name).unwrap()).parse::<i64>().unwrap();
                 assert_eq!(*i, g);
             }
-            _ => unimplemented!()
+            _ => unimplemented!(),
         };
-    };
-
+    }
 }
-
 
 // This should not compile
 
