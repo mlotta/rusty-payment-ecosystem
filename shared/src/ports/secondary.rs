@@ -1,53 +1,53 @@
-use anyhow::Error;
 use async_trait::async_trait;
-use crate::{Key, Val, PrimaryKey};
+use crate::{Val, error::InterfaceError};
+use uuid::Uuid;
+
+pub trait Repository<T>: Create<T> + Get<T> + Update<T> + List<T> + Delete<T> 
+where
+    T: Val,
+{}
 
 /// Create object trait
 #[async_trait]
-pub trait Create<T, K> 
+pub trait Create<T> 
 where
-    T: PrimaryKey<K> + Val,
-    K: Key
+    T: Val,
 {
-    async fn create(&self, item: &T) -> Result<(), Error>;
+    async fn create(&self, item: &T) -> Result<(), InterfaceError>;
 }
 
 /// Get object trait
 #[async_trait]
-pub trait Get<T, K> 
+pub trait Get<T> 
 where
-    T: PrimaryKey<K> + Val,
-    K: Key
+    T: Val,
 {
-    async fn get(&self, id: &K) -> Result<Option<T>, Error>;
+    async fn get(&self, id: &Uuid) -> Result<Option<T>, InterfaceError>;
 }
 
 /// Delete object trait
 #[async_trait]
-pub trait Delete<T, K> 
+pub trait Delete<T> 
 where
-    T: PrimaryKey<K> + Val,
-    K: Key
+    T: Val,
 {
-    async fn delete(&self, id: &K) -> Result<(), Error>;
+    async fn delete(&self, id: &Uuid) -> Result<(), InterfaceError>;
 }
 
 /// Update object trait
 #[async_trait]
-pub trait Update<T, K> 
+pub trait Update<T> 
 where
-    T: PrimaryKey<K> + Val,
-    K: Key
+    T: Val,
 {
-    async fn update(&self, item: &T) -> Result<(), Error>;
+    async fn update(&self, item: &T) -> Result<(), InterfaceError>;
 }
 
 /// Get object range trait
 #[async_trait]
-pub trait GetAll<T, K> 
+pub trait List<T> 
 where
-    T: Val + PrimaryKey<K>,
-    K: Key
+    T: Val,
 {
-    async fn all(&self) -> Result<Vec<T>, Error>;
+    async fn list(&self) -> Result<Vec<T>, InterfaceError>;
 }

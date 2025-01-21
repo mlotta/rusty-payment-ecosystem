@@ -1,17 +1,42 @@
 pub mod usecase;
 pub mod ports;
-use std::hash::Hash;
+// pub mod domain;
+pub mod error;
 
-// Define requirements for Key
-pub trait Key: Default + Eq + Hash + Send + Sync + Clone {}
-impl<T> Key for T where T: Default + Eq + Hash + Send + Sync + Clone {}
+pub mod utils;
+pub mod settings;
+pub mod rds_client;
+
 
 // Define requirement for Val
-pub trait Val: Default + Send + Sync + Clone{}
+pub trait Val: Default + Send + Sync + Clone {}
 impl<T> Val for T where T: Default + Send + Sync + Clone {}
 
-/// Define the primary key of of a type
-/// K: type of the key
-pub trait PrimaryKey<K>{
-    fn get_pk(&self) -> K;
+
+/// Queryset for SQL implementations
+pub trait QuerySet<T> {
+    /// Table name
+    fn table(&self) -> String;
+
+    /// SQL query to create a new table
+    fn create_table(&self) -> String;
+
+    /// SQL query to drop a table
+    fn drop_table(&self) -> String;
+
+    /// SQL query to delete an object by field (prepared)
+    fn delete(&self, field_name: &str) -> String;
+
+    /// SQL query to get an object by field (prepared)
+    fn get(&self, field_name: &str) -> String;
+
+    /// SQL query to create an object (prepared)
+    fn create(&self) -> String;
+
+    /// SQL query to update an object (prepared)
+    fn update(&self) -> String;
+
+    /// SQL query to list all items
+    fn list(&self) -> String;
 }
+            

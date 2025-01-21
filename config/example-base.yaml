@@ -1,0 +1,5 @@
+log_level: info
+rds:
+  db_instance: 
+  cluster_arn: ""
+  secret_arn: ""
