@@ -1,4 +1,4 @@
-# payment-ecosystem
+# rusty-payment-ecosystem
 
 This project is a Rust, PostgreSQL and AWS implementation of a banking ecosystem in which bank customers can order debit cards and perform payments through a network. The ecosystem is greatly simplified and serves only pedagological purposes.
 
