@@ -46,15 +46,6 @@ default = ["lambda"]
 lambda = ["lambda_runtime", "lambda_http", "rayon"]
 
 [[bin]]
-name = "iso8583-server"
-path = "src/bin/server.rs"
-
-[[bin]]
 name = "init-db"
 path = "src/bin/lambda/init-db.rs"
-required-features = ["lambda"]
-
-[[bin]]
-name = "get-balance"
-path = "src/bin/lambda/get-balance.rs"
 required-features = ["lambda"]

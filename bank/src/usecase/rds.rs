@@ -1,8 +1,8 @@
 use crate::models::{
     card::{Card, CardQuerySet},
     customer::{Customer, CustomerQuerySet},
-    BankRepository,
 };
+use crate::usecase::BankRepository;
 use aws_config::SdkConfig;
 use shared::ports::secondary::Repository;
 use shared::settings::RdsSettings;

@@ -19,9 +19,13 @@ pub struct Card {
     pan: String,
     #[serde(default)]
     customer_uuid: Uuid,
+    #[serde(default)]
+    csv: String,
     //TODO
     // #[serde(default)]
     // created_at:
+    // expiry date
+    // status: activated / not
 }
 
 pub type Pan = String;
