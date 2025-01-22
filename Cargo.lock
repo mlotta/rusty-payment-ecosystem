@@ -481,6 +481,7 @@ dependencies = [
  "pretty_assertions",
  "rand 0.8.5",
  "rayon",
+ "reqwest",
  "serde",
  "serde_json",
  "shared",
