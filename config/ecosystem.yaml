@@ -1,0 +1,20 @@
+agents:
+  bank:
+    big_bank:
+      issuer_identification_numbers:
+        mastercard: "51051000"
+        visa: "41111111"
+    lil_bank:
+      issuer_identification_numbers:
+        mastercard: "51999100"
+  network:
+    mastercard:
+      major_industry_identifier: 5
+      issuer_identification_numbers:
+        big_bank: "51051000"
+        lil_bank: "51999100"
+    visa:
+      major_industry_identifier: 4
+      issuer_identification_numbers:
+        big_bank: "41111111"
+    

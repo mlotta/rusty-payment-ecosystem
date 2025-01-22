@@ -1,5 +1,5 @@
 log_level: info
 rds:
-  db_instance: 
-  cluster_arn: ""
-  secret_arn: ""
+  secret_arn: "arn:aws:secretsmanager:region:123456789012:secret:MySecret"
+  cluster_arn: "arn:aws:rds:region:123456789012:cluster:my-cluster"
+  db_instance: "my-db-instance"

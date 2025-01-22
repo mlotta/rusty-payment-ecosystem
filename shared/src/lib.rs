@@ -6,10 +6,11 @@ pub mod error;
 pub mod rds_client;
 pub mod settings;
 pub mod utils;
+pub use sql_macros;
 
 // Define requirement for Val
-pub trait Val: Default + Send + Sync + Clone {}
-impl<T> Val for T where T: Default + Send + Sync + Clone {}
+pub trait Val: Default + Send + Sync + Clone + serde::de::DeserializeOwned {}
+impl<T> Val for T where T: Default + Send + Sync + Clone + serde::de::DeserializeOwned {}
 
 /// Queryset for SQL implementations
 pub trait QuerySet<T> {

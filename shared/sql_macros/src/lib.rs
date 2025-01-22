@@ -227,12 +227,12 @@ pub fn struct_to_sql(_metadata: TokenStream, item: TokenStream) -> TokenStream {
     quote! {
         // Don't modify the struct's fields
         #[derive(Clone, Debug, Default)]
-        struct #struct_name {
+        pub struct #struct_name {
             #(#field_defs)*
         }
 
         // Define a queryset for the model
-        struct #queryset_name<#struct_name> {
+        pub struct #queryset_name<#struct_name> {
             _struct: std::marker::PhantomData<#struct_name>
         }
 

@@ -46,6 +46,7 @@ struct BaseModel {
 
 #[test]
 fn test_base() {
+    use pretty_assertions::assert_eq;
     let item = BaseModel {
         name: "abc".to_string(),
         id: 5,

@@ -30,16 +30,6 @@ where
     client: Arc<RdsClient>,
     queryset: Box<Q>,
 
-    /// Deserialize formatted records into T.
-    /// Example implementation :
-    /// match from_str::<Vec<T>>(records) {
-    ///     Ok(items) => Ok(items),
-    ///     Err(e) => Err(InterfaceError::FromFields(format!(
-    ///         "Failed to parse formatted records: {e}"
-    ///     ))),
-    /// }
-    new_from_json_output: Box<dyn Fn(String) -> Result<Vec<T>, InterfaceError> + Sync>,
-
     _marker_val: PhantomData<T>,
 }
 
@@ -49,15 +39,10 @@ where
     Q: QuerySet<T> + std::marker::Sync,
 {
     /// Create a table with name {table} in the remote database
-    pub fn new(
-        client: Arc<RdsClient>,
-        queryset: Box<Q>,
-        new_from_json_output: Box<dyn Fn(String) -> Result<Vec<T>, InterfaceError> + Sync>,
-    ) -> Self {
+    pub fn new(client: Arc<RdsClient>, queryset: Box<Q>) -> Self {
         RdsRepository {
             client,
             queryset,
-            new_from_json_output,
             _marker_val: PhantomData,
         }
     }
@@ -88,7 +73,10 @@ where
     fn parse_rds_output(
         &self,
         statement: Result<ExecuteStatementOutput, SdkError<ExecuteStatementError>>,
-    ) -> Result<Vec<T>, InterfaceError> {
+    ) -> Result<Vec<T>, InterfaceError>
+    where
+        T: serde::de::DeserializeOwned,
+    {
         // Did the request succeed?
         let data = match statement {
             Ok(data) => Ok(data),
@@ -104,7 +92,12 @@ where
         }?;
 
         // Can we parse the records?
-        (self.new_from_json_output)(records.to_string())
+        match serde_json::from_str::<Vec<T>>(records.to_string().as_str()) {
+            Ok(items) => Ok(items),
+            Err(e) => Err(InterfaceError::FromFields(format!(
+                "Failed to parse formatted records: {e}"
+            ))),
+        }
     }
 }
 
@@ -245,8 +238,8 @@ where
 mod tests {
     use super::*;
     use crate::settings::{get_settings, init_environment};
+    use pretty_assertions::assert_eq;
     use serde::{Deserialize, Serialize};
-    use serde_json::from_str;
     use sql_macros::struct_to_sql;
     use uuid::Uuid;
 
@@ -280,20 +273,8 @@ mod tests {
         // Initialize the Item1 queryset
         let queryset: Box<Item1QuerySet<Item1>> = Box::new(Item1::queryset());
 
-        //
-        let new_from_json_output =
-            Box::new(
-                |records: String| match from_str::<Vec<Item1>>(records.as_str()) {
-                    Ok(items) => Ok(items),
-                    Err(e) => Err(InterfaceError::FromFields(format!(
-                        "Failed to parse formatted records: {e}"
-                    ))),
-                },
-            );
-
         // Initialize Rds Customer Repository
-        let repo: RdsRepository<Item1, Item1QuerySet<Item1>> =
-            RdsRepository::new(client, queryset, new_from_json_output);
+        let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = RdsRepository::new(client, queryset);
         repo
     }
 

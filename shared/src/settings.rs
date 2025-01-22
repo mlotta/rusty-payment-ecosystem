@@ -1,5 +1,7 @@
 //! Settings loading
 
+use std::collections::HashMap;
+
 use secrecy::Secret;
 use serde::Deserialize;
 
@@ -8,6 +10,7 @@ use serde::Deserialize;
 pub struct Settings {
     pub log_level: String,
     pub rds: RdsSettings,
+    pub agents: AgentSettings,
 }
 
 /// Settings for the Amazon Relational Database Service (Amazon RDS) client, primarily the Database & Cluster to access.
@@ -16,6 +19,25 @@ pub struct RdsSettings {
     pub secret_arn: Secret<String>,
     pub cluster_arn: String,
     pub db_instance: String,
+}
+
+/// Settings for a given agent, i.e. a cardholder, a bank, a network, ...
+#[derive(Debug, Deserialize)]
+pub struct AgentSettings {
+    // Cardholder(CardholderSettings),
+    pub bank: HashMap<String, BankSettings>,
+    pub network: HashMap<String, NetworkSettings>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BankSettings {
+    pub issuer_identification_numbers: HashMap<String, String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NetworkSettings {
+    pub major_industry_identifier: u8,
+    pub issuer_identification_numbers: HashMap<String, String>,
 }
 
 /// Any errors when loading the settings. Why are environments so complicated.
@@ -56,10 +78,12 @@ pub fn get_settings(environment: &Environment) -> Result<Settings, SettingsError
     let config_dir = base_dir.join("../config");
     let base_yaml = "base.yaml";
     let environment_yaml = format!("{}.yaml", environment.as_str());
+    let ecosystem_yaml = "ecosystem.yaml";
 
     let settings_loader = config::Config::builder()
         .add_source(config::File::from(config_dir.join(base_yaml)))
         .add_source(config::File::from(config_dir.join(environment_yaml)).required(false))
+        .add_source(config::File::from(config_dir.join(ecosystem_yaml)))
         .add_source(
             config::Environment::with_prefix("APP")
                 .prefix_separator("_")
@@ -125,6 +149,10 @@ mod test {
 
         assert_eq!(settings.log_level, "info");
         assert_eq!(settings.rds.db_instance, "bank_1");
+
+        dbg!(settings.agents.bank);
+        dbg!(settings.agents.network);
+        assert_eq!("", "1");
         Ok(())
     }
 }
