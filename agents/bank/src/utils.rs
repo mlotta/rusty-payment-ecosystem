@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use shared::settings::{get_settings, init_environment};
 use tracing::instrument;
 
