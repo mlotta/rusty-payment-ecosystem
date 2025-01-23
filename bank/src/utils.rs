@@ -1,7 +1,5 @@
-
-use tracing::instrument;
 use shared::settings::{get_settings, init_environment};
-
+use tracing::instrument;
 
 // Setup repository
 #[instrument]

@@ -1,20 +1,27 @@
-use lambda_http::{http::{Method, StatusCode}, IntoResponse, Request, RequestExt, RequestPayloadExt, Response};
-use tracing::{error, info, instrument, warn};
-use serde_json::json;
 use crate::usecase::BankRepository;
+use lambda_http::{
+    http::{Method, StatusCode},
+    IntoResponse, Request, RequestExt, RequestPayloadExt, Response,
+};
+use serde_json::json;
+use tracing::{error, info, instrument, warn};
 
 type E = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 /// Get the balance of a given customer
 #[instrument(skip(repo))]
-pub async fn get_balance(repo: &dyn BankRepository, event: Request) -> Result<impl IntoResponse, E>{
+pub async fn get_balance(
+    repo: &dyn BankRepository,
+    event: Request,
+) -> Result<impl IntoResponse, E> {
     // Ensure GET method
     if event.method() != Method::GET {
         return Ok(response(
-            StatusCode::METHOD_NOT_ALLOWED, 
-            json!({"message": "Method Not Allowed"}).to_string()))
+            StatusCode::METHOD_NOT_ALLOWED,
+            json!({"message": "Method Not Allowed"}).to_string(),
+        ));
     }
-    
+
     // Retrieve customer ID from event
     //
     // If the event doesn't contain a customer UUID, we return a 400 Bad Request.
@@ -31,12 +38,12 @@ pub async fn get_balance(repo: &dyn BankRepository, event: Request) -> Result<im
     };
 
     // Validate the UUID format
-    let uuid = match uuid::Uuid::parse_str(uuid){
+    let uuid = match uuid::Uuid::parse_str(uuid) {
         Ok(parsed_uuid) => parsed_uuid,
         Err(e) => {
             warn!("Invalid UUID format: {}", e);
             return Ok(response(
-                StatusCode::BAD_REQUEST, 
+                StatusCode::BAD_REQUEST,
                 json!({"message": "Invalid UUID format"}).to_string(),
             ));
         }
@@ -70,15 +77,18 @@ pub async fn get_balance(repo: &dyn BankRepository, event: Request) -> Result<im
     })
 }
 
-
 /// Create a customer account
 #[instrument(skip(repo))]
-pub async fn create_account(repo: &dyn BankRepository, event: Request) -> Result<impl IntoResponse, E>{
+pub async fn create_account(
+    repo: &dyn BankRepository,
+    event: Request,
+) -> Result<impl IntoResponse, E> {
     // Ensure POST method
     if event.method() != Method::POST {
         return Ok(response(
-            StatusCode::METHOD_NOT_ALLOWED, 
-            json!({"message": "Method Not Allowed"}).to_string()))
+            StatusCode::METHOD_NOT_ALLOWED,
+            json!({"message": "Method Not Allowed"}).to_string(),
+        ));
     }
     // Read customer from request
     let customer: crate::models::customer::Customer = match event.payload() {
@@ -86,9 +96,10 @@ pub async fn create_account(repo: &dyn BankRepository, event: Request) -> Result
         Ok(None) => {
             warn!("Missing account details in request body");
             return Ok(response(
-                StatusCode::BAD_REQUEST, 
-            json!({"message": "Missing account details in request body"}).to_string()))
-        },
+                StatusCode::BAD_REQUEST,
+                json!({"message": "Missing account details in request body"}).to_string(),
+            ));
+        }
         Err(err) => {
             warn!("Failed to parse account details from request body: {}", err);
             return Ok(response(
@@ -110,9 +121,9 @@ pub async fn create_account(repo: &dyn BankRepository, event: Request) -> Result
             info!("Created customer {:?}", customer.name);
             response(
                 StatusCode::CREATED,
-                json!({"message": "Account created"}).to_string()
+                json!({"message": "Account created"}).to_string(),
             )
-        } 
+        }
 
         // Error
         Err(err) => {
@@ -125,7 +136,6 @@ pub async fn create_account(repo: &dyn BankRepository, event: Request) -> Result
     })
 }
 
-
 /// HTTP Response with a JSON payload
 fn response(status_code: StatusCode, body: String) -> Response<String> {
     Response::builder()
@@ -134,4 +144,3 @@ fn response(status_code: StatusCode, body: String) -> Response<String> {
         .body(body)
         .unwrap()
 }
-

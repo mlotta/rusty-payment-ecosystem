@@ -1,16 +1,15 @@
 //! AWS Testing
-//! 
+//!
 
 use bank::models::customer::Customer;
+use pretty_assertions::assert_eq;
+use rand::Rng;
 use reqwest::StatusCode;
 use uuid::Uuid;
-use rand::Rng;
-use pretty_assertions::assert_eq;
 
 type E = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 pub fn get_random_customer() -> Customer {
-
     let mut rng = rand::thread_rng();
 
     // let account_number: String = (0..11)
@@ -31,9 +30,12 @@ async fn test_flow() -> Result<(), E> {
 
     let customer = get_random_customer();
     dbg!(&customer.uuid);
-    
+
     // Create account for customer
-    println!("Creating an account for customer with name {}", customer.name);
+    println!(
+        "Creating an account for customer with name {}",
+        customer.name
+    );
     let res = client
         .post(format!("{}/create-account", api_url))
         .json(&customer)
@@ -51,6 +53,6 @@ async fn test_flow() -> Result<(), E> {
     assert_eq!(res.status(), StatusCode::OK);
     let res_customer: Customer = res.json().await?;
     assert_eq!(customer.balance, res_customer.balance);
-    
+
     Ok(())
 }

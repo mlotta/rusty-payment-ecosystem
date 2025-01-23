@@ -1,18 +1,15 @@
-use crate::models::{
-    card::Card,
-    customer::Customer,
-};
+use crate::models::{card::Card, customer::Customer};
 use crate::usecase::BankRepository;
 use shared::ports::secondary::Repository;
 use shared::usecase::memory::{HasUuid, InMemoryRepository};
 
-impl HasUuid for Customer{
+impl HasUuid for Customer {
     fn get_uuid(&self) -> uuid::Uuid {
         self.uuid
     }
 }
 
-impl HasUuid for Card{
+impl HasUuid for Card {
     fn get_uuid(&self) -> uuid::Uuid {
         self.uuid
     }
@@ -27,10 +24,7 @@ impl BankMemoryRepository {
     pub fn new() -> Self {
         let customers: InMemoryRepository<Customer> = InMemoryRepository::new();
         let cards: InMemoryRepository<Card> = InMemoryRepository::new();
-        Self {
-            customers,
-            cards,
-        }
+        Self { customers, cards }
     }
 }
 

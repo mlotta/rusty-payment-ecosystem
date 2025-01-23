@@ -1,5 +1,5 @@
-pub mod rds;
 pub mod memory;
+pub mod rds;
 
 use shared::ports::secondary::Repository;
 

@@ -22,7 +22,6 @@ pub struct Customer {
                   // created_at:
 }
 
-
 #[cfg(test)]
 pub fn get_random_customer() -> Customer {
     use rand::Rng;
