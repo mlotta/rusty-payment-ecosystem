@@ -21,3 +21,21 @@ pub struct Customer {
                   // #[serde(default)]
                   // created_at:
 }
+
+
+#[cfg(test)]
+pub fn get_random_customer() -> Customer {
+    use rand::Rng;
+
+    let mut rng = rand::thread_rng();
+
+    // let account_number: String = (0..11)
+    //     .map(|_| rng.gen_range(0..10).to_string())
+    //     .collect();
+    Customer {
+        uuid: Uuid::new_v4(),
+        name: format!("customer-{}", rng.gen_range(1..=1000)),
+        // account_number: account_number,
+        balance: rng.gen_range(0..=1000),
+    }
+}

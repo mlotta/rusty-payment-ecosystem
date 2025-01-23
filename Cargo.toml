@@ -3,3 +3,12 @@ members = [
     "shared",
     "bank",
 ]
+
+
+[bank.metadata.lambda.watch.router]
+"/get-balance/uuid/{uuid}" = [ 
+    { method = "GET", function = "get-product" }
+]
+"/create-account" = [ 
+    { method = "POST", function = "create-account" }
+]

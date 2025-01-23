@@ -1,4 +1,4 @@
-use lambda_http::{aws_lambda_events::query_map::QueryMap, http::{Method, StatusCode}, IntoResponse, Request, RequestExt, RequestPayloadExt, Response};
+use lambda_http::{http::{Method, StatusCode}, IntoResponse, Request, RequestExt, RequestPayloadExt, Response};
 use tracing::{error, info, instrument, warn};
 use serde_json::json;
 use crate::usecase::BankRepository;
@@ -43,13 +43,14 @@ pub async fn get_balance(repo: &dyn BankRepository, event: Request) -> Result<im
     };
 
     // Retrieve the balance
+    // TODO: Don't return the full customer object
     info!("Fetching balance for user uuid {}", uuid);
-    let balance = crate::domain::get_balance(repo, uuid).await;
+    let customer = crate::domain::get_balance(repo, uuid).await;
 
     // Return response
-    Ok(match balance {
+    Ok(match customer {
         // Found
-        Ok(Some(balance)) => response(StatusCode::OK, json!({"balance": balance}).to_string()),
+        Ok(Some(customer)) => response(StatusCode::OK, json!(customer).to_string()),
         // Doesn't exist
         Ok(None) => {
             warn!("Customer not found: {}", uuid);
