@@ -19,11 +19,11 @@ pub async fn create_account(
     repo: &dyn BankRepository,
     customer: &Customer,
 ) -> Result<(), InterfaceError> {
-    repo.customers().create(&customer).await
+    repo.customers().create(customer).await
 }
 
 /// Order a new card for a customer
-pub async fn order_card(repo: &dyn BankRepository, uuid: Uuid) -> Result<(), InterfaceError> {
+pub async fn order_card(_repo: &dyn BankRepository, _uuid: Uuid) -> Result<(), InterfaceError> {
     // Need to establish a connection with a network first
     todo!()
 }
@@ -42,7 +42,7 @@ pub async fn authorize_transaction(
     }
 
     let customer = repo.customers().get(&uuid).await?;
-    if let None = customer {
+    if customer.is_none() {
         return Err(InterfaceError::MissingItem(uuid.to_string()));
     }
 

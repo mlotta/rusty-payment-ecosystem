@@ -28,6 +28,12 @@ impl BankMemoryRepository {
     }
 }
 
+impl Default for BankMemoryRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BankRepository for BankMemoryRepository {
     fn customers(&self) -> &dyn Repository<Customer> {
         &self.customers
