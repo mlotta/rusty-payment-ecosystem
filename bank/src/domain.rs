@@ -3,10 +3,10 @@ use shared::error::InterfaceError;
 use uuid::Uuid;
 
 /// Get the current balance of a customer
-pub async fn get_balance(repo: &dyn BankRepository, uuid: Uuid) -> Result<Option<Uuid>, InterfaceError>{
+pub async fn get_balance(repo: &dyn BankRepository, uuid: Uuid) -> Result<Option<i32>, InterfaceError>{
     let customer = repo.customers().get(&uuid).await?;
     match customer {
-        Some(customer) => Ok(Some(customer.uuid)),
+        Some(customer) => Ok(Some(customer.balance)),
         None => Err(InterfaceError::MissingItem(uuid.to_string()))
     }
 }

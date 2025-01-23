@@ -1,4 +1,4 @@
-use lambda_http::{http::StatusCode, IntoResponse, Request, RequestExt, Response};
+use lambda_http::{aws_lambda_events::query_map::QueryMap, http::{Method, StatusCode}, IntoResponse, Request, RequestExt, RequestPayloadExt, Response};
 use tracing::{error, info, instrument, warn};
 use serde_json::json;
 use crate::usecase::BankRepository;
@@ -8,12 +8,17 @@ type E = Box<dyn std::error::Error + Send + Sync + 'static>;
 /// Get the balance of a given customer
 #[instrument(skip(repo))]
 pub async fn get_balance(repo: &dyn BankRepository, event: Request) -> Result<impl IntoResponse, E>{
+    // Ensure GET method
+    if event.method() != Method::GET {
+        return Ok(response(
+            StatusCode::METHOD_NOT_ALLOWED, 
+            json!({"message": "Method Not Allowed"}).to_string()))
+    }
+    
     // Retrieve customer ID from event
     //
     // If the event doesn't contain a customer UUID, we return a 400 Bad Request.
     let path_parameters = event.path_parameters();
-    error!("{:?}", &event);
-    error!("{:?}", &path_parameters);
     let uuid = match path_parameters.first("uuid") {
         Some(uuid) => uuid,
         None => {
@@ -65,6 +70,61 @@ pub async fn get_balance(repo: &dyn BankRepository, event: Request) -> Result<im
 }
 
 
+/// Create a customer account
+#[instrument(skip(repo))]
+pub async fn create_account(repo: &dyn BankRepository, event: Request) -> Result<impl IntoResponse, E>{
+    // Ensure POST method
+    if event.method() != Method::POST {
+        return Ok(response(
+            StatusCode::METHOD_NOT_ALLOWED, 
+            json!({"message": "Method Not Allowed"}).to_string()))
+    }
+    // Read customer from request
+    let customer: crate::models::customer::Customer = match event.payload() {
+        Ok(Some(customer)) => customer,
+        Ok(None) => {
+            warn!("Missing account details in request body");
+            return Ok(response(
+                StatusCode::BAD_REQUEST, 
+            json!({"message": "Missing account details in request body"}).to_string()))
+        },
+        Err(err) => {
+            warn!("Failed to parse account details from request body: {}", err);
+            return Ok(response(
+                StatusCode::BAD_REQUEST,
+                json!({"message": "Failed to parse account detials from request body"}).to_string(),
+            ));
+        }
+    };
+    info!("Parsed customer: {:?}", customer);
+
+    // Create customer
+    let resp = crate::domain::create_account(repo, &customer).await;
+    dbg!(&customer.uuid);
+
+    // Return response
+    Ok(match resp {
+        // Found
+        Ok(_) => {
+            info!("Created customer {:?}", customer.name);
+            response(
+                StatusCode::CREATED,
+                json!({"message": "Account created"}).to_string()
+            )
+        } 
+
+        // Error
+        Err(err) => {
+            error!("Failed to crate an account {}: {}", customer.name, err);
+            response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                json!({"message": "Failed to create account"}).to_string(),
+            )
+        }
+    })
+}
+
+
 /// HTTP Response with a JSON payload
 fn response(status_code: StatusCode, body: String) -> Response<String> {
     Response::builder()
@@ -73,3 +133,4 @@ fn response(status_code: StatusCode, body: String) -> Response<String> {
         .body(body)
         .unwrap()
 }
+

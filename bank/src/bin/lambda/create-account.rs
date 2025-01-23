@@ -13,6 +13,6 @@ async fn main() -> Result<(), E> {
     // Initialize repository
     let repo = get_bank_repository().await;
 
-    lambda_http::run(service_fn(|event: Request| bank::apigateway::get_balance(&repo, event))).await?;
+    lambda_http::run(service_fn(|event: Request| bank::apigateway::create_account(&repo, event))).await?;
     Ok(())
 }
