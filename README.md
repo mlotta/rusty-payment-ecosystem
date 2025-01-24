@@ -1,8 +1,8 @@
-# rusty-payment-ecosystem
+# rusty-payment-ecosystem :construction: 
 
 This project is a Rust, PostgreSQL and AWS implementation of a banking ecosystem in which bank customers can order debit cards and perform payments through a network. The ecosystem is greatly simplified and serves only pedagological purposes.
 
-**Status**: Work in Progress. The following serves both as a description of the current state of the project and as a roadmap for future development.
+**Status**: Work in Progress. The following is a long-term vision of the project. We define the milestones and track the progress of this project in the `scenario` folder.
 
 ## Description of the ecosystem
 
@@ -34,16 +34,16 @@ This project is a Rust, PostgreSQL and AWS implementation of a banking ecosystem
 
 ## Implementation
 
-We describe three types of agents: Banks, Networks, and Cardholders.  The crates `bank`, `network` and `cardholder` respectively implement the code executed by each of these agents. They all rely on the `shared` crate which uses an hexagonal architecture pattern to provide off-the-shelf interface implementations :
+We describe three types of `agents`: Banks, Networks, and Cardholders.  The crates `bank`, `network` and `cardholder` respectively implement the code executed by each of these agents. They all rely on the `shared` crate which uses an hexagonal architecture pattern to provide off-the-shelf interface implementations :
 - [X] Repository : AWS RDS (including a macro to generate sql code from a struct's definition), in memory
 - [ ] Recipient : AWS SNS
 - [ ] Lambda HTTP events
 - [ ] An ISO 8583 server (based on [iso8583_rs](https://github.com/rkbalgi/iso8583_rs/tree/master?tab=readme-ov-file))
 
-Each agent is deployed independantly on AWS in a VPC described by:
-- An Aurora Serveless PostgreSQL database
-- An API Gateway mapping to :
-- Lambdas for the treatment of the HTTP requests
+Each agent is deployed independantly on AWS in a cluster containing:
+- An Aurora Serveless PostgreSQL database instance
+- An API Gateway mapping to:
+  - Lambdas for the treatment of the HTTP requests
 - A Fargate instance processing the ISO 8583 requests
 
 The configuration of these agents is described in the `/config/ecosystem.yaml` file.

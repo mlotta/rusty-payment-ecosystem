@@ -1,4 +1,4 @@
-# Customer account management
+# Remote database connection
 
 ## Description
 
@@ -24,4 +24,4 @@ This scenario walks through the process of managing custom models in a remote da
 
 ## Test Cases
 
-TODO
+TODO: describe the tests in the md file
