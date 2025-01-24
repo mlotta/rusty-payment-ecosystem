@@ -16,7 +16,7 @@ use aws_sdk_rdsdata::{
 };
 use uuid::Uuid;
 
-/// Build a Vec<SqlParameter> to use in ExecuteStatementBuilder::set_parameters.
+/// Build a `Vec<SqlParameter>` to use in ExecuteStatementBuilder::set_parameters.
 /// from an items fields
 pub trait GetFieldsAsParams {
     fn get_fields_as_params(&self) -> Option<Vec<SqlParameter>>;

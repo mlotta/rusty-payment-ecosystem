@@ -112,7 +112,6 @@ pub async fn create_account(
 
     // Create customer
     let resp = crate::domain::create_account(repo, &customer).await;
-    dbg!(&customer.uuid);
 
     // Return response
     Ok(match resp {
