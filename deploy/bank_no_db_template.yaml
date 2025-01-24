@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  LambdaLogLevel:
+    Description: "Log verbosity level for Lambda functions"
+    Type: String
+    Default: info
+  DBClusterArn:
+    Description: "The Arn of the DB Cluster used for connecting the lambdas"
+    Type: String
+  DBSecretArn:
+    Description: "The Arn of a Secret Arn corresponding to the DB Cluster"
+    Type: String
+  DBInstance:
+    Description: "The DB instance to which the lambdas can connect"
+    Type: String
+
+Globals:
+  Function:
+    MemorySize: 128
+    Architectures: ["arm64"]
+    Handler: bootstrap
+    Runtime: provided.al2023
+    Timeout: 5
+    Tracing: Active
+    Environment:
+      Variables:
+        RUST_LOG: !Ref LambdaLogLevel
+        APP_DB_CLUSTER_ARN: !Ref DBClusterArn
+        APP_DB_SECRET_ARN: !Ref DBSecretArn
+        APP_DB_INSTANCE: !Ref DBInstance
+
+Resources:
+  GetBalanceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: agents/target/lambda/get-balance/
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /get-balance/{uuid}
+            Method: GET
+    Metadata:
+      BuildMethod: rust-cargolambda
+
+  CreateAccountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: agents/target/lambda/create-account/
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /create-account
+            Method: POST
+    Metadata:
+      BuildMethod: rust-cargolambda
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"

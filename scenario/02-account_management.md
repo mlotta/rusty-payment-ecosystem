@@ -1,0 +1,51 @@
+# Customer account management
+
+## Description
+
+This scenario walks through the process where a new customer creates an account and manages it. It tests that the account creation and balance check routes work as expected.
+
+
+## Objectives
+
+- **Account creation**: A customer can create an account in any of the banks of the ecosystem.
+- **Check balance**: A customer can check their current balance.
+
+## Milestones / Steps
+- [X] **Step 1**: Define `Customer` model and domain logic
+- [X] **Step 2**: Implement tooling for querying custom models in SQL
+- [X] **Step 3**: Implement and deploy lambda http handlers behind an API Gateway connecting to a manually instanciated Aurora DB Instance
+- [X] **Step 4**: Implement flow tests
+- [ ] **Step 5**: Script the  deployment of a full bank agent stack, including the API Gateway, lambda functions and database
+
+## Setup Instructions
+- **Environment**: AWS
+- **Pre-requisites**: `cargo lambda` and `sam` installed and configured with your AWS credentials, an Aurora DB instance
+- **How to Reproduce**:
+    1. Rename `config/example-base.yaml`to `config/base.yaml` and fill your database credentials. This will tell your lambda functions how to connect to the database.
+    2. Run the following to compile the code and deploy the stack :
+        ```
+        cd agents/bank
+        cargo lambda build --release --target aarch64-unknown-linux-gnu
+        sam deploy -g --stack-name bank-1
+        ```
+    3. Run tests in `agents/bank/apigateway.rs` with :
+        ```
+        API_URL=https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/ RUST_LOG=DEBUG cargo test test_flow -- --exact
+        ````
+
+## Test Cases
+### TODO Fix settings bug
+1. [X] **Test Case 1: [Account creation]**
+    - **Input**: Randomly generated customer detail and an API endpoint
+    - **Step 1**: Create a customer account with `POST /create-account`
+    - **Expected Output**: Code: 201
+
+2. [X] **Test Case 2: [Get balance]**
+    - **Input**: A user uuid and an API endpoint
+    - **Step 1**: `GET /get-balance` 
+    - **Expected Output**: Code: 200 and correct user account balance.
+
+TODO
+
+## Post-Conditions / Cleanup
+- [ ] Delete the created user.

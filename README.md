@@ -5,7 +5,8 @@ This project is a Rust, PostgreSQL and AWS implementation of a banking ecosystem
 **Status**: Work in Progress. The following serves both as a description of the current state of the project and as a roadmap for future development.
 
 ## Description of the ecosystem
-### Customer lifecycle
+
+### Customer account management
 
 - A customer can create an account in any of the banks of the ecosystem with `POST /create-account`.
 - A customer can check their balance with a call to `GET /get-balance`.
