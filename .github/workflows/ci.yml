@@ -28,15 +28,12 @@ jobs:
         run: cd agents
       - uses: Swatinem/rust-cache@v1
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
+        run: cargo fmt
+        working-directory: agents
       - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+        working-directory: agents
+        run: cargo clippy
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --lib --bins
+        working-directory: agents
+        run: test --lib --bins
+        
