@@ -35,5 +35,5 @@ jobs:
         run: cargo clippy
       - name: Test
         working-directory: agents
-        run: test --lib --bins
+        run: cargo test --lib --bins
         

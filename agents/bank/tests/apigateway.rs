@@ -24,9 +24,10 @@ pub fn get_random_customer() -> Customer {
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_flow() -> Result<(), E> {
     let client = reqwest::Client::new();
-    let api_url: String = "http://localhost:9000/lambda-url".to_string();
+    let api_url: String = std::env::var("API_URL").expect("API_URL not set");
 
     let customer = get_random_customer();
     dbg!(&customer.uuid);
