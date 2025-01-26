@@ -75,7 +75,7 @@ pub fn init_environment() -> Result<Environment, SettingsError> {
 /// Looks in base.yaml, {environment}.yaml, and then APP_* env variables.
 pub fn get_settings(environment: &Environment) -> Result<Settings, SettingsError> {
     let base_dir = std::env::current_dir().expect("Failed to determine cwd");
-    let config_dir = base_dir.join("../../config");
+    let config_dir = base_dir.join("../config");
     let base_yaml = "base.yaml";
     let environment_yaml = format!("{}.yaml", environment.as_str());
     let ecosystem_yaml = "ecosystem.yaml";
