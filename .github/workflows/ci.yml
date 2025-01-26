@@ -24,16 +24,17 @@ jobs:
             toolchain: ${{ matrix.rust }}
             override: true
             components: rustfmt, clippy
-      - name: Change directory to the workspace
-        run: cd agents
       - uses: Swatinem/rust-cache@v1
       - name: Run cargo fmt
-        run: cargo fmt
-        working-directory: agents
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
       - name: Run cargo clippy
-        working-directory: agents
-        run: cargo clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
       - name: Test
-        working-directory: agents
-        run: cargo test --lib --bins
-        
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --lib --bins
