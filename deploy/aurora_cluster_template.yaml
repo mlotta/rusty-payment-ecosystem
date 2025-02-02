@@ -1,14 +1,29 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Provisions Aurora Serverless and ecosytem configuration in an S3 bucket
+Description: Provisions Aurora Serverless DB Cluster and ecosytem configuration in an S3 bucket
+
+Parameters:
+  DBMasterUserName:
+    AllowedPattern: "[a-zA-Z0-9_]+"
+    ConstraintDescription: must be between 1 to 16 alphanumeric characters.
+    Description: The database admin account user name, between 1 to 16 alphanumeric characters.
+    MaxLength: '16'
+    MinLength: '1'
+    Type: String
+    Default: dbadmin
+  DBClusterName:
+    Description: Database name for the DB Cluster
+    Type: String
+    Default: agentsdb
 
 # Aurora PostgreSQL DB Cluster
 Resources:
-  AgentDBCluster:
+  EcosystemDBCluster:
     Type: AWS::RDS::DBCluster
     Properties:
       Engine: aurora-postgresql
-      DBClusterIdentifier: agent-db-cluster
+      DatabaseName: !Ref DBClusterName
+      DBClusterIdentifier: ecosystem-db-cluster
       MasterUsername: !Join ['', ['{{resolve:secretsmanager:', !Ref DBPasswordSecret, ':SecretString:username}}' ]]
       MasterUserPassword: !Join ['', ['{{resolve:secretsmanager:', !Ref DBPasswordSecret, ':SecretString:password}}' ]]
       BackupRetentionPeriod: 7
@@ -20,10 +35,10 @@ Resources:
   DBPasswordSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name: agent-db-password
+      Name: ecosystem-db-password
       Description: "Randomly generated password for the database"
       GenerateSecretString:
-        SecretStringTemplate: '{"username":"dbadmin"}'
+        SecretStringTemplate: !Sub '{"username":"${DBMasterUserName}"}'
         GenerateStringKey: "password"
         PasswordLength: 30
         ExcludeCharacters: '"@/\\'
@@ -37,10 +52,56 @@ Resources:
 
 
 Outputs:
+  StackName:  
+    Description: "Setup Stack Name"
+    Value: !Ref AWS::StackName
+    Export:
+      Name: !Sub ${AWS::StackName}-StackName
+
+  DatabaseClusterArn:
+    Description: Aurora Cluster ARN
+    Value: !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:agent-db-cluster
+    Export:
+      Name: !Sub ${AWS::StackName}-DatabaseClusterArn
+
+  DatabaseClusterName:
+    Description: Aurora Cluster Database Name
+    Value: !Ref DBClusterName
+    Export:
+      Name: !Sub ${AWS::StackName}-DatabaseClusterName
+
+  DatabaseClusterIdentifier:
+    Description: Aurora Cluster ID
+    Value: !Ref EcosystemDBCluster
+    Export:
+      Name: !Sub ${AWS::StackName}-DatabaseClusterID
+
+  DatabaseSecretArn:
+    Description: Aurora Secret ARN
+    Value: !Ref DBPasswordSecret
+    Export:
+      Name: !Sub ${AWS::StackName}-DatabaseSecretArn
+
   DatabaseEndpoint:
     Description: Endpoint for the Aurora PostgeSQL database
-    Value: !GetAtt AgentDBCluster.Endpoint.Address
+    Value: !GetAtt EcosystemDBCluster.Endpoint.Address
+    Export:
+      Name: !Sub ${AWS::StackName}-DatabaseEndpoint
+
+  DatabaseMasterUserName:
+    Description: Aurora Database User
+    Value: !Ref DBMasterUserName
+    Export:
+      Name: !Sub ${AWS::StackName}-DatabaseMasterUserName
 
   EcosystemConfigBucketName:
     Description: Name of the S3 bucket for the ecosystem configuration file
     Value: !Ref EcosystemConfigBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-EcosystemConfigBucketName
+
+  EcosystemConfigBucketArn:
+    Description: Name of the S3 bucket for the ecosystem configuration file
+    Value: !Sub "arn:aws:s3:::ecosystem-config-bucket-${AWS::AccountId}-${AWS::Region}"
+    Export:
+      Name: !Sub ${AWS::StackName}-EcosystemConfigBucketArn
