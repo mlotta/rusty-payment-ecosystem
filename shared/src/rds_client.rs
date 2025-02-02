@@ -16,9 +16,9 @@ impl RdsClient {
     pub fn new(settings: &RdsSettings, sdk_config: &SdkConfig) -> Self {
         RdsClient {
             client: aws_sdk_rdsdata::Client::new(sdk_config),
-            secret_arn: settings.secret_arn.clone(),
-            cluster_arn: settings.cluster_arn.clone(),
-            db_instance: settings.db_instance.clone(),
+            secret_arn: settings.secretarn.clone(),
+            cluster_arn: settings.clusterarn.clone(),
+            db_instance: settings.dbinstance.clone(),
         }
     }
 

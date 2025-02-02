@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Provisions Aurora Serverless and ecosytem configuration in an S3 bucket
+
+# Aurora PostgreSQL DB Cluster
+Resources:
+  AgentDBCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora-postgresql
+      DBClusterIdentifier: agent-db-cluster
+      MasterUsername: !Join ['', ['{{resolve:secretsmanager:', !Ref DBPasswordSecret, ':SecretString:username}}' ]]
+      MasterUserPassword: !Join ['', ['{{resolve:secretsmanager:', !Ref DBPasswordSecret, ':SecretString:password}}' ]]
+      BackupRetentionPeriod: 7
+      EngineVersion: 16.4
+      StorageEncrypted: true
+      EnableIAMDatabaseAuthentication: true
+
+  # Secret for DB Password (randomly generated)
+  DBPasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: agent-db-password
+      Description: "Randomly generated password for the database"
+      GenerateSecretString:
+        SecretStringTemplate: '{"username":"dbadmin"}'
+        GenerateStringKey: "password"
+        PasswordLength: 30
+        ExcludeCharacters: '"@/\\'
+
+  # S3 Bucket for Ecosystem Configuration File
+  EcosystemConfigBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "ecosystem-config-bucket-${AWS::AccountId}-${AWS::Region}"
+      AccessControl: Private
+
+
+Outputs:
+  DatabaseEndpoint:
+    Description: Endpoint for the Aurora PostgeSQL database
+    Value: !GetAtt AgentDBCluster.Endpoint.Address
+
+  EcosystemConfigBucketName:
+    Description: Name of the S3 bucket for the ecosystem configuration file
+    Value: !Ref EcosystemConfigBucket

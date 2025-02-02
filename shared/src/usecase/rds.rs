@@ -237,7 +237,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::settings::{get_settings, init_environment};
+    use crate::settings::get_settings;
     use pretty_assertions::assert_eq;
     use serde::{Deserialize, Serialize};
     use sql_macros::struct_to_sql;
@@ -264,8 +264,7 @@ mod tests {
         let sdk_config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
 
         // Load settings
-        let environment = init_environment().expect("Failed to initialize environment");
-        let settings = get_settings(&environment).expect("Failed to load configuration");
+        let settings = get_settings().await.expect("Failed to load configuration");
 
         // Get client
         let client = Arc::new(RdsClient::new(&settings.rds, &sdk_config));

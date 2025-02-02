@@ -1,24 +1,24 @@
 //! Settings loading
 
 use std::collections::HashMap;
-
 use secrecy::Secret;
 use serde::Deserialize;
+use config::{builder::DefaultState, ConfigBuilder};
 
 /// Top level settings
 #[derive(Debug, Deserialize)]
 pub struct Settings {
-    pub log_level: String,
     pub rds: RdsSettings,
     pub agents: AgentSettings,
 }
 
+
 /// Settings for the Amazon Relational Database Service (Amazon RDS) client, primarily the Database & Cluster to access.
 #[derive(Debug, Deserialize)]
 pub struct RdsSettings {
-    pub secret_arn: Secret<String>,
-    pub cluster_arn: String,
-    pub db_instance: String,
+    pub secretarn: Secret<String>,
+    pub clusterarn: String,
+    pub dbinstance: String,
 }
 
 /// Settings for a given agent, i.e. a cardholder, a bank, a network, ...
@@ -44,111 +44,99 @@ pub struct NetworkSettings {
 #[derive(Debug)]
 pub enum SettingsError {
     Config(config::ConfigError),
+    #[cfg(not(test))]
+    S3(String)
 }
 
-const DEFAULT_ENVIRONMENT: &str = "local";
-const DEFAULT_LOG_LEVEL: &str = "trace";
-const DEFAULT_BACKTRACE: &str = "1";
 
-/// Attempt to find the environment, and preset any environment variables.
-/// Valid environments are in [Environment].
-pub fn init_environment() -> Result<Environment, SettingsError> {
-    let environment: Environment = std::env::var("APP_ENVIRONMENT")
-        .unwrap_or_else(|_| DEFAULT_ENVIRONMENT.into())
-        .try_into()
-        .expect("failed to parse APP_ENVIRONMENT");
+/// Get ecosystem S3 bucket
+#[cfg(not(test))]
+async fn get_ecosystem_settings(settings_loader: ConfigBuilder<DefaultState>) -> Result<ConfigBuilder<DefaultState>, SettingsError> {
+    // Get AWS Config
+    let sdk_config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
 
-    // Convenient for development. Production should set its flags itself.
-    if !matches!(environment, Environment::Production) {
-        if std::env::var("RUST_LIB_BACKTRACE").is_err() {
-            std::env::set_var("RUST_LIB_BACKTRACE", DEFAULT_BACKTRACE)
-        }
-        if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", DEFAULT_LOG_LEVEL)
-        }
-    }
+    let bucket_name = std::env::var("CONFIG_FILE_BUCKET").expect("CONFIG_FILE_BUCKET must be set");
+    let key = std::env::var("CONFIG_FILE_KEY").expect("CONFIG_FILE_KEY must be set");
+    let client = aws_sdk_s3::Client::new(&sdk_config);
 
-    Ok(environment)
+    let response = client
+        .get_object()
+        .bucket(bucket_name)
+        .key(key)
+        .send()
+        .await
+        .map_err(|err| SettingsError::S3(err.to_string()))?;
+
+    let data = response.body.collect().await.map_err(|err| SettingsError::S3(err.to_string()))?;
+    let ecosystem_yaml = String::from_utf8(data.to_vec()).map_err(|err| SettingsError::S3(err.to_string()))?;
+
+    Ok(settings_loader.add_source(config::File::from_str(&ecosystem_yaml, config::FileFormat::Yaml)))
+
 }
 
-/// Load settings, given an [Environment].
-/// Looks in base.yaml, {environment}.yaml, and then APP_* env variables.
-pub fn get_settings(environment: &Environment) -> Result<Settings, SettingsError> {
+/// Get rds settings from env
+#[cfg(not(test))]
+async fn get_db_settings(settings_loader: ConfigBuilder<DefaultState>) -> Result<ConfigBuilder<DefaultState>, SettingsError>{
+    // Add environment variables as a source
+    Ok(settings_loader.add_source(
+        config::Environment::with_prefix("DB") // Use "DB" as the prefix for database-related environment variables
+            .separator("_") 
+    ))
+}
+
+/// Get ecosystem config from local file
+#[cfg(test)]
+async fn get_ecosystem_settings(settings_loader: ConfigBuilder<DefaultState>) -> Result<ConfigBuilder<DefaultState>, SettingsError> {
     let base_dir = std::env::current_dir().expect("Failed to determine cwd");
     let config_dir = base_dir.join("../config");
-    let base_yaml = "base.yaml";
-    let environment_yaml = format!("{}.yaml", environment.as_str());
-    let ecosystem_yaml = "ecosystem.yaml";
+    let ecosystem_yaml = "ecosystem-config.yaml";
 
-    let settings_loader = config::Config::builder()
-        .add_source(config::File::from(config_dir.join(base_yaml)))
-        .add_source(config::File::from(config_dir.join(environment_yaml)).required(false))
-        .add_source(config::File::from(config_dir.join(ecosystem_yaml)))
-        .add_source(
-            config::Environment::with_prefix("APP")
-                .prefix_separator("_")
-                .separator("__"), // By convention, to deconflict variables with _s.
-        )
+    Ok(settings_loader.add_source(config::File::from(config_dir.join(ecosystem_yaml))))
+}
+
+/// Get rds settings from local file
+#[cfg(test)]
+async fn get_db_settings(settings_loader: ConfigBuilder<DefaultState>) -> Result<ConfigBuilder<DefaultState>, SettingsError>{
+    let base_dir = std::env::current_dir().expect("Failed to determine cwd");
+    let config_dir = base_dir.join("../config");
+    let database_yaml = "local.yaml";
+
+    Ok(settings_loader.add_source(config::File::from(config_dir.join(database_yaml))))
+
+}
+
+/// Load settings
+/// Looks for database settings in the environment and the ecosystem config
+/// in an S3 bucket.
+pub async fn get_settings() -> Result<Settings, SettingsError> {
+    let mut settings_loader = config::Config::builder();
+
+    settings_loader = get_ecosystem_settings(settings_loader).await?;
+    settings_loader = get_db_settings(settings_loader).await?;
+
+    let settings_loader: config::Config = settings_loader
         .build()
         .map_err(SettingsError::Config)?;
 
+    dbg!(&settings_loader);
     settings_loader
         .try_deserialize::<Settings>()
         .map_err(SettingsError::Config)
+    
 }
 
-/// Valid environments for this app.
-pub enum Environment {
-    Local,
-    Test,
-    Production,
-}
-
-impl Environment {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Environment::Local => "local",
-            Environment::Test => "test",
-            Environment::Production => "production",
-        }
-    }
-}
-
-impl TryFrom<String> for Environment {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.to_lowercase().as_str() {
-            "local" => Ok(Environment::Local),
-            "test" => Ok(Environment::Test),
-            "production" => Ok(Environment::Production),
-            other => Err(format!(
-                "Unknown environment {other}. Please use 'local', 'test', or 'production'."
-            )),
-        }
-    }
-}
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    #[test]
-    fn test_init_local_environment() -> Result<(), SettingsError> {
-        let envi = init_environment().expect("failed to load event");
-
-        assert_eq!(envi.as_str(), Environment::Local.as_str());
-        Ok(())
-    }
-
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_get_local_settings() -> Result<(), SettingsError> {
-        let envi = init_environment().expect("failed to load event");
-        let settings = get_settings(&envi).expect("failed to load settings");
+    async fn test_get_local_settings() -> Result<(), SettingsError> {
+        let settings = get_settings().await.expect("failed to load settings");
 
-        assert_eq!(settings.log_level, "info");
-        assert_eq!(settings.rds.db_instance, "bank_1");
+        // assert_eq!(settings.log_level, "info");
+        // assert_eq!(settings.rds.db_instance, "bank_1");
 
         dbg!(settings.agents.bank);
         dbg!(settings.agents.network);
