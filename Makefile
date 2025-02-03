@@ -25,17 +25,27 @@ setup:
 
 
 account_management:
-	# cd agents/bank && \
-	# cargo lambda build --release --target aarch64-unknown-linux-gnu 
+	# Build lambda functions
+	cd agents/bank && \
+	cargo lambda build --release --target aarch64-unknown-linux-gnu 
 
-	# sam deploy \
-	# 	--stack-name bank-1 \
-	# 	--template-file "deploy/bank_agent_template.yaml" \
-	# 	--parameter-overrides \
-	# 		DBClusterStackName="ecosystem-database"
+	# Deploy the lambda function + APIG
+	sam deploy \
+		--stack-name bank-1 \
+		--template-file "deploy/bank_agent_template.yaml" \
+		--parameter-overrides \
+			DBClusterStackName="ecosystem-database"
+
+	# Run tests
+	API_URL=$$(aws cloudformation describe-stacks --stack-name bank-1 \
+		--query 'Stacks[0].Outputs[?OutputKey==`BankingAgentApiUrl`].OutputValue' \
+		--output text) cargo test --package bank --test apigateway -- test_account_management_flow --exact --show-output --ignored
 
 order_card:
 	echo "Not implemented yet ..."
 
 transaction:
 	echo "Not implemented yet ..."
+
+tests-unit:
+	cargo test --lib --bins

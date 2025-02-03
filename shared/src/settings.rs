@@ -1,9 +1,9 @@
 //! Settings loading
 
-use std::collections::HashMap;
+use config::{builder::DefaultState, ConfigBuilder};
 use secrecy::Secret;
 use serde::Deserialize;
-use config::{builder::DefaultState, ConfigBuilder};
+use std::collections::HashMap;
 
 /// Top level settings
 #[derive(Debug, Deserialize)]
@@ -11,7 +11,6 @@ pub struct Settings {
     pub rds: RdsSettings,
     pub agents: AgentSettings,
 }
-
 
 /// Settings for the Amazon Relational Database Service (Amazon RDS) client, primarily the Database & Cluster to access.
 #[derive(Debug, Deserialize)]
@@ -45,13 +44,14 @@ pub struct NetworkSettings {
 pub enum SettingsError {
     Config(config::ConfigError),
     #[cfg(not(test))]
-    S3(String)
+    S3(String),
 }
-
 
 /// Get ecosystem S3 bucket
 #[cfg(not(test))]
-async fn get_ecosystem_settings(settings_loader: ConfigBuilder<DefaultState>) -> Result<ConfigBuilder<DefaultState>, SettingsError> {
+async fn get_ecosystem_settings(
+    settings_loader: ConfigBuilder<DefaultState>,
+) -> Result<ConfigBuilder<DefaultState>, SettingsError> {
     // Get AWS Config
     let sdk_config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
 
@@ -67,26 +67,37 @@ async fn get_ecosystem_settings(settings_loader: ConfigBuilder<DefaultState>) ->
         .await
         .map_err(|err| SettingsError::S3(err.to_string()))?;
 
-    let data = response.body.collect().await.map_err(|err| SettingsError::S3(err.to_string()))?;
-    let ecosystem_yaml = String::from_utf8(data.to_vec()).map_err(|err| SettingsError::S3(err.to_string()))?;
+    let data = response
+        .body
+        .collect()
+        .await
+        .map_err(|err| SettingsError::S3(err.to_string()))?;
+    let ecosystem_yaml =
+        String::from_utf8(data.to_vec()).map_err(|err| SettingsError::S3(err.to_string()))?;
 
-    Ok(settings_loader.add_source(config::File::from_str(&ecosystem_yaml, config::FileFormat::Yaml)))
-
+    Ok(settings_loader.add_source(config::File::from_str(
+        &ecosystem_yaml,
+        config::FileFormat::Yaml,
+    )))
 }
 
 /// Get rds settings from env
 #[cfg(not(test))]
-async fn get_db_settings(settings_loader: ConfigBuilder<DefaultState>) -> Result<ConfigBuilder<DefaultState>, SettingsError>{
+async fn get_db_settings(
+    settings_loader: ConfigBuilder<DefaultState>,
+) -> Result<ConfigBuilder<DefaultState>, SettingsError> {
     // Add environment variables as a source
     Ok(settings_loader.add_source(
         config::Environment::with_prefix("DB") // Use "DB" as the prefix for database-related environment variables
-            .separator("_") 
+            .separator("_"),
     ))
 }
 
 /// Get ecosystem config from local file
 #[cfg(test)]
-async fn get_ecosystem_settings(settings_loader: ConfigBuilder<DefaultState>) -> Result<ConfigBuilder<DefaultState>, SettingsError> {
+async fn get_ecosystem_settings(
+    settings_loader: ConfigBuilder<DefaultState>,
+) -> Result<ConfigBuilder<DefaultState>, SettingsError> {
     let base_dir = std::env::current_dir().expect("Failed to determine cwd");
     let config_dir = base_dir.join("../config");
     let ecosystem_yaml = "ecosystem-config.yaml";
@@ -96,13 +107,14 @@ async fn get_ecosystem_settings(settings_loader: ConfigBuilder<DefaultState>) ->
 
 /// Get rds settings from local file
 #[cfg(test)]
-async fn get_db_settings(settings_loader: ConfigBuilder<DefaultState>) -> Result<ConfigBuilder<DefaultState>, SettingsError>{
+async fn get_db_settings(
+    settings_loader: ConfigBuilder<DefaultState>,
+) -> Result<ConfigBuilder<DefaultState>, SettingsError> {
     let base_dir = std::env::current_dir().expect("Failed to determine cwd");
     let config_dir = base_dir.join("../config");
     let database_yaml = "local.yaml";
 
     Ok(settings_loader.add_source(config::File::from(config_dir.join(database_yaml))))
-
 }
 
 /// Load settings
@@ -114,16 +126,12 @@ pub async fn get_settings() -> Result<Settings, SettingsError> {
     settings_loader = get_ecosystem_settings(settings_loader).await?;
     settings_loader = get_db_settings(settings_loader).await?;
 
-    let settings_loader: config::Config = settings_loader
-        .build()
-        .map_err(SettingsError::Config)?;
+    let settings_loader: config::Config = settings_loader.build().map_err(SettingsError::Config)?;
 
     settings_loader
         .try_deserialize::<Settings>()
         .map_err(SettingsError::Config)
-    
 }
-
 
 #[cfg(test)]
 mod test {

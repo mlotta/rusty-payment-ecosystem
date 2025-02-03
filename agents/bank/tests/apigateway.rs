@@ -25,7 +25,7 @@ pub fn get_random_customer() -> Customer {
 
 #[tokio::test]
 #[ignore]
-async fn test_flow() -> Result<(), E> {
+async fn test_account_management_flow() -> Result<(), E> {
     let client = reqwest::Client::new();
     let api_url: String = std::env::var("API_URL").expect("API_URL not set");
 
@@ -42,6 +42,7 @@ async fn test_flow() -> Result<(), E> {
         .json(&customer)
         .send()
         .await?;
+    dbg!(&res);
     assert_eq!(res.status(), StatusCode::CREATED);
 
     // Get balance
