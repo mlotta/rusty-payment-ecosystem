@@ -7,7 +7,7 @@ DB_INSTANCE := $(shell aws cloudformation describe-stacks --stack-name ecosystem
 
 setup:
 	# Provision a DB Cluster and the ecosytem configuration in an S3 bucket
-	sam deploy\
+	sam deploy -g \
 		--stack-name ecosystem-database \
 		--template-file "deploy/aurora_cluster_template.yaml" 
 
@@ -30,7 +30,7 @@ account_management:
 	cargo lambda build --release --target aarch64-unknown-linux-gnu 
 
 	# Deploy the lambda function + APIG
-	sam deploy \
+	sam deploy -g \
 		--stack-name bank-1 \
 		--template-file "deploy/bank_agent_template.yaml" \
 		--parameter-overrides \

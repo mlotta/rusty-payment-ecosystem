@@ -13,24 +13,21 @@ This scenario walks through the process where a new customer creates an account 
 ## Milestones / Steps
 - [X] **Step 1**: Define `Customer` model and domain logic
 - [X] **Step 2**: Implement tooling for querying custom models in SQL
-- [X] **Step 3**: Implement and deploy lambda http handlers behind an API Gateway connecting to a manually instanciated Aurora DB Instance
-- [X] **Step 4**: Implement flow tests
-- [ ] **Step 5**: Script the  deployment of a full bank agent stack, including the API Gateway, lambda functions and database
+- [X] **Step 3**: Provision an Aurora DB Cluster and ecosystem configuration in an S3 bucket
+- [X] **Step 4**: Implement and deploy lambda http handlers behind an API Gateway connecting to the DB
+- [X] **Step 5**: Implement flow tests
 
 ## Setup Instructions
 - **Environment**: AWS
-- **Pre-requisites**: `cargo lambda` and `sam` installed and configured with your AWS credentials, an Aurora DB instance
+- **Pre-requisites**: `cargo lambda` and `sam` installed and configured with your AWS credentials.
 - **How to Reproduce**:
-    1. Rename `config/example-base.yaml`to `config/base.yaml` and fill your database credentials. This will tell your lambda functions how to connect to the database.
-    2. Run the following to compile the code and deploy the stack :
+    1. Run `make setup` to create the database and the S3 bucket
+    2. Run `make account_management` to build the lambda functions and deploy a banking agent. 
+    3. Run flow tests in `agents/bank/apigateway.rs` with :
         ```
-        cd agents/bank
-        cargo lambda build --release --target aarch64-unknown-linux-gnu
-        sam deploy -g --stack-name bank-1
-        ```
-    3. Run tests in `agents/bank/apigateway.rs` with :
-        ```
-        API_URL=https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/ RUST_LOG=DEBUG cargo test test_flow -- --exact
+        API_URL=$$(aws cloudformation describe-stacks --stack-name bank-1 \
+		--query 'Stacks[0].Outputs[?OutputKey==`BankingAgentApiUrl`].OutputValue' \
+		--output text) cargo test --package bank --test apigateway -- test_account_management_flow --exact --show-output --ignored
         ````
 
 ## Test Cases
@@ -45,7 +42,6 @@ This scenario walks through the process where a new customer creates an account 
     - **Step 1**: `GET /get-balance` 
     - **Expected Output**: Code: 200 and correct user account balance.
 
-TODO
 
 ## Post-Conditions / Cleanup
 - [ ] Delete the created user.
