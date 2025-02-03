@@ -17,7 +17,7 @@ This scenario walks through the process of managing custom models in a remote da
 - [X] **Step 4**: Implement tests
 
 ## Setup Instructions
-- **Environment**: Manually et up an Aurora DB instance and enable HTTP.
+- **Environment**: Manually set up an Aurora DB instance and enable HTTP.
 - **How to Reproduce**:
     1. Rename `config/example-base.yaml`to `config/base.yaml` and fill your database credentials.
     2. Run the test in `agents/shared/usecase/rds`

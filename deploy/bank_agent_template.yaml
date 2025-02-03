@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Provisions AWS Serverless API resources for a Banking Agent
+
+Globals:
+  Function:
+    Runtime: provided.al2023
+    Architectures:
+      - arm64
+    Timeout: 30
+    MemorySize: 128
+    Environment:
+      Variables:
+        CONFIG_FILE_BUCKET: 
+          Fn::ImportValue:
+           !Sub "${DatabaseStackName}-EcosystemConfigBucketName" 
+        CONFIG_FILE_KEY: ecosystem-config.yaml
+        DB_RDS_CLUSTERARN:
+          Fn::ImportValue:
+            !Sub "${DatabaseStackName}-DatabaseClusterArn" 
+        DB_RDS_SECRETARN: 
+          Fn::ImportValue:
+            !Sub "${DatabaseStackName}-DatabaseSecretArn" 
+        DB_RDS_DBINSTANCE: 
+          Fn::ImportValue:
+            !Sub "${DatabaseStackName}-DatabaseClusterName" 
+
+
+Parameters:
+  DatabaseStackName:
+    Description: "Name of the Aurora DB Cluster Cloudformation stack to import parameters from"
+    Type: String
+    Default: ecosystem-database
+
+Resources:
+  # Create Account Lambda Function
+  BankCreateAccountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: bootstrap
+      CodeUri: ../target/lambda/create-account/
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - rds-db:connect
+              Resource: 
+                Fn::ImportValue:
+                  !Sub "${DatabaseStackName}-DatabaseClusterArn"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: 
+                Fn::ImportValue:
+                  !Sub "${DatabaseStackName}-EcosystemConfigBucketArn" 
+            - Effect: Allow 
+              Action: 
+                - secretsmanager:GetSecretValue
+              Resource:
+                Fn::ImportValue:
+                  !Sub "${DatabaseStackName}-DatabaseSecretArn" 
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /create-account
+            Method: POST
+    Metadata:
+      BuildMethod: rust-cargolambda
+
+  # Get Balance Lambda Function
+  BankGetBalanceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: bootstrap
+      CodeUri: ../target/lambda/get-balance/
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - rds-db:connect
+              Resource: 
+                Fn::ImportValue:
+                  !Sub "${DatabaseStackName}-DatabaseClusterArn"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: 
+                Fn::ImportValue:
+                  !Sub "${DatabaseStackName}-EcosystemConfigBucketArn" 
+            - Effect: Allow 
+              Action: 
+                - secretsmanager:GetSecretValue
+              Resource:
+                Fn::ImportValue:
+                  !Sub "${DatabaseStackName}-DatabaseSecretArn" 
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            Path: /get-balance/
+            Method: GET
+    Metadata:
+      BuildMethod: rust-cargolambda
+Outputs:
+  StackName:  
+    Description: "Agent Stack Name"
+    Value: !Ref AWS::StackName
+    Export:
+      Name: !Sub ${AWS::StackName}-StackName
+
+  BankingAgentApiUrl:
+    Description: URL for the agent's API
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Export:
+      Name: !Sub ${AWS::StackName}-APIUrl
