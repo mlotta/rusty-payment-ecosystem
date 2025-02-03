@@ -7,7 +7,7 @@ setup:
 		--stack-name ecosystem-database \
 		--template-file "deploy/aurora_cluster_template.yaml" 
 
-	aws s3 cp config/ecosystem-config.yaml s3://$(BUCKET_NAME)
+	sleep 5 && aws s3 cp config/ecosystem-config.yaml s3://$(BUCKET_NAME)
 
 
 account_management:
