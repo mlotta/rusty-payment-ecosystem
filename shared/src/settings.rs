@@ -118,7 +118,6 @@ pub async fn get_settings() -> Result<Settings, SettingsError> {
         .build()
         .map_err(SettingsError::Config)?;
 
-    dbg!(&settings_loader);
     settings_loader
         .try_deserialize::<Settings>()
         .map_err(SettingsError::Config)

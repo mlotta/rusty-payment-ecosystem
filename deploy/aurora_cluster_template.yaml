@@ -14,10 +14,10 @@ Parameters:
   DBClusterName:
     Description: Database name for the DB Cluster
     Type: String
-    Default: agentsdb
+    Default: ecosystemdb
 
-# Aurora PostgreSQL DB Cluster
 Resources:
+  # Aurora PostgreSQL DB Cluster
   EcosystemDBCluster:
     Type: AWS::RDS::DBCluster
     Properties:
@@ -27,10 +27,20 @@ Resources:
       MasterUsername: !Join ['', ['{{resolve:secretsmanager:', !Ref DBPasswordSecret, ':SecretString:username}}' ]]
       MasterUserPassword: !Join ['', ['{{resolve:secretsmanager:', !Ref DBPasswordSecret, ':SecretString:password}}' ]]
       BackupRetentionPeriod: 7
-      EngineVersion: 16.4
-      StorageEncrypted: true
+      EngineVersion: "16.4"
+      EnableHttpEndpoint: true  
       EnableIAMDatabaseAuthentication: true
 
+  # Aurora PostgreSQL DB Instance
+  EcosystemDBInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+        Engine: aurora-postgresql
+        DBInstanceClass: db.r5.large
+        DBClusterIdentifier: !Ref EcosystemDBCluster
+        DBInstanceIdentifier: ecosystem-db-instance
+        PubliclyAccessible: false 
+  
   # Secret for DB Password (randomly generated)
   DBPasswordSecret:
     Type: AWS::SecretsManager::Secret
@@ -60,7 +70,7 @@ Outputs:
 
   DatabaseClusterArn:
     Description: Aurora Cluster ARN
-    Value: !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:agent-db-cluster
+    Value: !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:ecosystem-db-cluster
     Export:
       Name: !Sub ${AWS::StackName}-DatabaseClusterArn
 

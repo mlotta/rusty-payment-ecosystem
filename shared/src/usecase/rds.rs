@@ -298,7 +298,7 @@ mod tests {
     #[tokio::test]
     #[serial_test::serial]
     #[ignore]
-    async fn test_create_and_delete_db() -> Result<(), InterfaceError> {
+    async fn test_create_and_delete_table() -> Result<(), InterfaceError> {
         // GIVEN an empty repository
         let repo: RdsRepository<Item1, Item1QuerySet<Item1>> = get_item1_repository().await;
 
